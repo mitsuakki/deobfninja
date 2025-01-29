@@ -22,12 +22,12 @@ void Test(BinaryView *bv) {
 void Test2(BinaryView *bv) {
     for (auto& func : bv->GetAnalysisFunctionList()) {
         Ref<Symbol> sym = func->GetSymbol();
-        // LogInfo("%s", sym->GetFullName().c_str());
+        // printf("%s", sym->GetFullName().c_str());
 
         if (sym->GetFullName() == "main") {
             Ref<LowLevelILFunction> il = func->GetLowLevelIL();
             if (!il) {
-                LogInfo("    Does not have LLIL\n\n");
+                printf("    Does not have LLIL\n\n");
                 return;
             }
 
@@ -40,7 +40,7 @@ void Test2(BinaryView *bv) {
                             auto leftExpr = srcExpr.GetLeftExpr<LLIL_ADD>();
                             auto rightExpr = srcExpr.GetRightExpr<LLIL_ADD>();
                             if (leftExpr.operation == LLIL_REG && rightExpr.operation == LLIL_REG) {
-                                LogInfo("\nProcessing instruction at 0x%" PRIx64 " with operation %d at block 0x%" PRIx64 "\n", instr.address, instr.operation, block->GetStart());
+                                printf("\nProcessing instruction at 0x%" PRIx64 " with operation %d at block 0x%" PRIx64 "\n", instr.address, instr.operation, block->GetStart());
                                 PrintILExpr(instr, 2);
                             }
                         }
@@ -54,12 +54,12 @@ void Test2(BinaryView *bv) {
 void Test4(const Ref<AnalysisContext> &analysisContext) {
     const Ref<Function> func = analysisContext->GetFunction();
     const Ref<Symbol> sym = func->GetSymbol();
-    // LogInfo("%s", sym->GetFullName().c_str());
+    // printf("%s", sym->GetFullName().c_str());
 
     if (sym->GetFullName() == "main") {
         const Ref<LowLevelILFunction> il = func->GetLowLevelIL();
         if (!il) {
-            LogInfo("    Does not have LLIL\n\n");
+            printf("    Does not have LLIL\n\n");
             return;
         }
 
@@ -74,7 +74,7 @@ void Test4(const Ref<AnalysisContext> &analysisContext) {
                         auto rightExpr = srcExpr.GetRightExpr<LLIL_ADD>();
 
                         if (leftExpr.operation == LLIL_REG && rightExpr.operation == LLIL_REG) {
-                            LogInfo("\nProcessing instruction at 0x%" PRIx64 " with operation %d at block 0x%" PRIx64 "\n", instr.address, instr.operation, block->GetStart());
+                            printf("\nProcessing instruction at 0x%" PRIx64 " with operation %d at block 0x%" PRIx64 "\n", instr.address, instr.operation, block->GetStart());
                             PrintILExpr(instr, 2);
 
                             const ExprId newInstr = il->AddExpr(
@@ -102,13 +102,13 @@ void Test5(BinaryView *view) {
 void Test6(BinaryView *view) {
     for (auto& func : view->GetAnalysisFunctionList()) {
         Ref<Symbol> sym = func->GetSymbol();
-        // LogInfo("%s", sym->GetFullName().c_str());
+        // printf("%s", sym->GetFullName().c_str());
 
         if (sym->GetFullName() == "main") {
             Ref<MediumLevelILFunction> il = func->GetMediumLevelIL();
             if (!il)
             {
-                LogInfo("    Does not have MLIL\n\n");
+                printf("    Does not have MLIL\n\n");
                 return;
             }
 
@@ -124,7 +124,7 @@ void Test6(BinaryView *view) {
                             auto leftExpr = srcExpr.GetLeftExpr<MLIL_ADD>();
                             auto rightExpr = srcExpr.GetRightExpr<MLIL_ADD>();
                             if (leftExpr.operation == MLIL_VAR && rightExpr.operation == MLIL_VAR) {
-                                LogInfo("\nProcessing instruction at 0x%" PRIx64 " with operation %d at block 0x%" PRIx64 "\n", instr.address, instr.operation, block->GetStart());
+                                printf("\nProcessing instruction at 0x%" PRIx64 " with operation %d at block 0x%" PRIx64 "\n", instr.address, instr.operation, block->GetStart());
                                 PrintMLILExpr(instr, 2);
                             }
                         }
@@ -138,12 +138,12 @@ void Test6(BinaryView *view) {
 void Test7(const Ref<AnalysisContext> &analysisContext) {
     const Ref<Function> func = analysisContext->GetFunction();
     const Ref<Symbol> sym = func->GetSymbol();
-    // LogInfo("%s", sym->GetFullName().c_str());
+    // printf("%s", sym->GetFullName().c_str());
 
     if (sym->GetFullName() == "main") {
         const Ref<MediumLevelILFunction> il = func->GetMediumLevelIL();
         if (!il) {
-            LogInfo("    Does not have MLIL\n\n");
+            printf("    Does not have MLIL\n\n");
             return;
         }
 
@@ -158,7 +158,7 @@ void Test7(const Ref<AnalysisContext> &analysisContext) {
                         auto leftExpr = srcExpr.GetLeftExpr<MLIL_ADD>();
                         auto rightExpr = srcExpr.GetRightExpr<MLIL_ADD>();
                         if (leftExpr.operation == MLIL_VAR && rightExpr.operation == MLIL_VAR) {
-                            LogInfo("\nProcessing instruction at 0x%" PRIx64 " with operation %d at block 0x%" PRIx64 "\n", instr.address, instr.operation, block->GetStart());
+                            printf("\nProcessing instruction at 0x%" PRIx64 " with operation %d at block 0x%" PRIx64 "\n", instr.address, instr.operation, block->GetStart());
                             PrintMLILExpr(instr, 2);
 
                             const ExprId newInstr = il->AddExpr(

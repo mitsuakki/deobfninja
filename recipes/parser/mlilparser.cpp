@@ -6,7 +6,7 @@ using namespace std;
 
 #define ENUM_PRINTER(op) \
 	case op: \
-		LogInfo(#op); \
+		printf(#op); \
 		break;
 
 void PrintMLILOperation(BNMediumLevelILOperation operation)
@@ -117,7 +117,7 @@ void PrintMLILOperation(BNMediumLevelILOperation operation)
 		ENUM_PRINTER(MLIL_VAR_PHI)
 		ENUM_PRINTER(MLIL_MEM_PHI)
 	default:
-		LogInfo("<invalid operation %" PRId32 ">", operation);
+		printf("<invalid operation %" PRId32 ">", operation);
 		break;
 	}
 }
@@ -127,9 +127,9 @@ void PrintVariable(MediumLevelILFunction* func, const Variable& var)
 {
 	string name = func->GetFunction()->GetVariableName(var);
 	if (name.size() == 0)
-		LogInfo("<no name>");
+		printf("<no name>");
 	else
-		LogInfo("%s", name.c_str());
+		printf("%s", name.c_str());
 }
 
 
@@ -137,7 +137,7 @@ void PrintMLILExpr(const MediumLevelILInstruction& instr, size_t indent)
 {
 	PrintIndent(indent);
 	PrintMLILOperation(instr.operation);
-	LogInfo("\n");
+	printf("\n");
 
 	indent++;
 
@@ -147,12 +147,12 @@ void PrintMLILExpr(const MediumLevelILInstruction& instr, size_t indent)
 		{
 		case IntegerMediumLevelOperand:
 			PrintIndent(indent);
-			LogInfo("int 0x%" PRIx64 "\n", operand.GetInteger());
+			printf("int 0x%" PRIx64 "\n", operand.GetInteger());
 			break;
 
 		case IndexMediumLevelOperand:
 			PrintIndent(indent);
-			LogInfo("index %" PRIdPTR "\n", operand.GetIndex());
+			printf("index %" PRIdPTR "\n", operand.GetIndex());
 			break;
 
 		case ExprMediumLevelOperand:
@@ -161,58 +161,58 @@ void PrintMLILExpr(const MediumLevelILInstruction& instr, size_t indent)
 
 		case VariableMediumLevelOperand:
 			PrintIndent(indent);
-			LogInfo("var ");
+			printf("var ");
 			PrintVariable(instr.function, operand.GetVariable());
-			LogInfo("\n");
+			printf("\n");
 			break;
 
 		case SSAVariableMediumLevelOperand:
 			PrintIndent(indent);
-			LogInfo("ssa var ");
+			printf("ssa var ");
 			PrintVariable(instr.function, operand.GetSSAVariable().var);
-			LogInfo("#%" PRIdPTR "\n", operand.GetSSAVariable().version);
+			printf("#%" PRIdPTR "\n", operand.GetSSAVariable().version);
 			break;
 
 		case IndexListMediumLevelOperand:
 			PrintIndent(indent);
-			LogInfo("index list ");
+			printf("index list ");
 			for (auto i : operand.GetIndexList())
-				LogInfo("%" PRIdPTR " ", i);
-			LogInfo("\n");
+				printf("%" PRIdPTR " ", i);
+			printf("\n");
 			break;
 
 		case VariableListMediumLevelOperand:
 			PrintIndent(indent);
-			LogInfo("var list ");
+			printf("var list ");
 			for (auto i : operand.GetVariableList())
 			{
 				PrintVariable(instr.function, i);
-				LogInfo(" ");
+				printf(" ");
 			}
-			LogInfo("\n");
+			printf("\n");
 			break;
 
 		case SSAVariableListMediumLevelOperand:
 			PrintIndent(indent);
-			LogInfo("ssa var list ");
+			printf("ssa var list ");
 			for (auto i : operand.GetSSAVariableList())
 			{
 				PrintVariable(instr.function, i.var);
-				LogInfo("#%" PRIdPTR " ", i.version);
+				printf("#%" PRIdPTR " ", i.version);
 			}
-			LogInfo("\n");
+			printf("\n");
 			break;
 
 		case ExprListMediumLevelOperand:
 			PrintIndent(indent);
-			LogInfo("expr list\n");
+			printf("expr list\n");
 			for (auto& i : operand.GetExprList())
 				PrintMLILExpr(i, indent + 1);
 			break;
 
 		default:
 			PrintIndent(indent);
-			LogInfo("<invalid operand>\n");
+			printf("<invalid operand>\n");
 			break;
 		}
 	}
@@ -222,15 +222,15 @@ void AnalyzeMLILFunction(const BinaryNinja::Ref<BinaryNinja::Function>& func) {
 	// Get the name of the function and display it
 	Ref<Symbol> sym = func->GetSymbol();
 	if (sym)
-		LogInfo("Function %s:\n", sym->GetFullName().c_str());
+		printf("Function %s:\n", sym->GetFullName().c_str());
 	else
-		LogInfo("Function at 0x%" PRIx64 ":\n", func->GetStart());
+		printf("Function at 0x%" PRIx64 ":\n", func->GetStart());
 
 	// Fetch the medium level IL for the function
 	Ref<MediumLevelILFunction> il = func->GetMediumLevelIL();
 	if (!il)
 	{
-		LogInfo("    Does not have MLIL\n\n");
+		printf("    Does not have MLIL\n\n");
 		return;
 	}
 
@@ -246,10 +246,10 @@ void AnalyzeMLILFunction(const BinaryNinja::Ref<BinaryNinja::Function>& func) {
 			// Display core's intrepretation of the IL instruction
 			vector<InstructionTextToken> tokens;
 			il->GetInstructionText(func, func->GetArchitecture(), instrIndex, tokens);
-			LogInfo("    %" PRIdPTR " @ 0x%" PRIx64 "  ", instrIndex, instr.address);
+			printf("    %" PRIdPTR " @ 0x%" PRIx64 "  ", instrIndex, instr.address);
 			for (auto& token : tokens)
-				LogInfo("%s", token.text.c_str());
-			LogInfo("\n");
+				printf("%s", token.text.c_str());
+			printf("\n");
 
 			// Generically parse the IL tree and display the parts
 			PrintMLILExpr(instr, 2);
@@ -258,7 +258,7 @@ void AnalyzeMLILFunction(const BinaryNinja::Ref<BinaryNinja::Function>& func) {
 			instr.VisitExprs([&](const MediumLevelILInstruction& expr) {
 				bool status = MediumLevelILFunction::IsConstantType(expr.operation);
 				if (status)
-					LogInfo("        Found constant 0x%" PRIx64 "\n", expr.GetConstant());
+					printf("        Found constant 0x%" PRIx64 "\n", expr.GetConstant());
 				return !status;
 			});
 
@@ -269,13 +269,13 @@ void AnalyzeMLILFunction(const BinaryNinja::Ref<BinaryNinja::Function>& func) {
 				case MLIL_LOAD:
 					if (expr.GetSourceExpr<MLIL_LOAD>().operation == MLIL_CONST_PTR)
 					{
-						LogInfo("        Loading from address 0x%" PRIx64 "\n",
+						printf("        Loading from address 0x%" PRIx64 "\n",
 						    expr.GetSourceExpr<MLIL_LOAD>().GetConstant<MLIL_CONST_PTR>());
 						return false;  // Done parsing this
 					}
 					else if (expr.GetSourceExpr<MLIL_LOAD>().operation == MLIL_EXTERN_PTR)
 					{
-						LogInfo("        Loading from address 0x%" PRIx64 "\n",
+						printf("        Loading from address 0x%" PRIx64 "\n",
 						    expr.GetSourceExpr<MLIL_LOAD>().GetConstant<MLIL_EXTERN_PTR>());
 						return false;  // Done parsing this
 					}
@@ -288,5 +288,5 @@ void AnalyzeMLILFunction(const BinaryNinja::Ref<BinaryNinja::Function>& func) {
 		}
 	}
 
-	LogInfo("\n");
+	printf("\n");
 }

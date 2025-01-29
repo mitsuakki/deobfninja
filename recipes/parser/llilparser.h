@@ -12,6 +12,6 @@ void PrintFlagCondition(const BNLowLevelILFlagCondition cond);
 void PrintRegister(const BinaryNinja::LowLevelILFunction* func, const uint32_t reg);
 void PrintFlag(const BinaryNinja::LowLevelILFunction* func, const uint32_t flag);
 void PrintILExpr(const BinaryNinja::LowLevelILInstruction& instr, size_t indent);
-void AnalyzeFunction(const BinaryNinja::Ref<BinaryNinja::Function>& func);
+void AnalyzeLLILFunction(const BinaryNinja::Ref<BinaryNinja::Function>& func);
 
 #endif // LLILPARSER_H

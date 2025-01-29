@@ -9,12 +9,12 @@ using namespace std;
 
 void PrintIndent(const size_t indent) {
     for (size_t i = 0; i < indent; i++)
-        printf("    ");
+        LogInfo("    ");
 }
 
 #define ENUM_PRINTER(op) \
     case op: \
-        printf(#op); \
+        LogInfo(#op); \
         break;
 
 void PrintOperation(const BNLowLevelILOperation operation) {
@@ -105,12 +105,12 @@ void PrintOperation(const BNLowLevelILOperation operation) {
         ENUM_PRINTER(LLIL_SYSCALL_SSA)
         ENUM_PRINTER(LLIL_TAILCALL_SSA)
         default:
-            printf("<invalid operation %" PRId32 ">", operation);
+            LogInfo("<invalid operation %" PRId32 ">", operation);
             break;
     }
 }
 
-void PrintFlagCondition(const BNLowLevelILFlagCondition cond) {
+void LogInfolagCondition(const BNLowLevelILFlagCondition cond) {
     switch (cond) {
         ENUM_PRINTER(LLFC_E)
         ENUM_PRINTER(LLFC_NE)
@@ -127,39 +127,39 @@ void PrintFlagCondition(const BNLowLevelILFlagCondition cond) {
         ENUM_PRINTER(LLFC_O)
         ENUM_PRINTER(LLFC_NO)
         default:
-            printf("<invalid condition>");
+            LogInfo("<invalid condition>");
             break;
     }
 }
 
 void PrintRegister(const LowLevelILFunction* func, const uint32_t reg) {
     if (LLIL_REG_IS_TEMP(reg))
-        printf("temp%d", LLIL_GET_TEMP_REG_INDEX(reg));
+        LogInfo("temp%d", LLIL_GET_TEMP_REG_INDEX(reg));
     else {
         const string name = func->GetArchitecture()->GetRegisterName(reg);
         if (name.empty())
-            printf("<no name>");
+            LogInfo("<no name>");
         else
-            printf("%s", name.c_str());
+            LogInfo("%s", name.c_str());
     }
 }
 
-void PrintFlag(const LowLevelILFunction* func, const uint32_t flag) {
+void LogInfolag(const LowLevelILFunction* func, const uint32_t flag) {
     if (LLIL_REG_IS_TEMP(flag))
-        printf("cond:%d", LLIL_GET_TEMP_REG_INDEX(flag));
+        LogInfo("cond:%d", LLIL_GET_TEMP_REG_INDEX(flag));
     else {
         const string name = func->GetArchitecture()->GetFlagName(flag);
         if (name.empty())
-            printf("<no name>");
+            LogInfo("<no name>");
         else
-            printf("%s", name.c_str());
+            LogInfo("%s", name.c_str());
     }
 }
 
 void PrintILExpr(const LowLevelILInstruction& instr, size_t indent) {
     PrintIndent(indent);
     PrintOperation(instr.operation);
-    printf("\n");
+    LogInfo("\n");
 
     indent++;
 
@@ -167,12 +167,12 @@ void PrintILExpr(const LowLevelILInstruction& instr, size_t indent) {
         switch (operand.GetType()) {
             case IntegerLowLevelOperand:
                 PrintIndent(indent);
-                printf("int 0x%" PRIx64 "\n", operand.GetInteger());
+                LogInfo("int 0x%" PRIx64 "\n", operand.GetInteger());
                 break;
 
             case IndexLowLevelOperand:
                 PrintIndent(indent);
-                printf("index %" PRIdPTR "\n", operand.GetIndex());
+                LogInfo("index %" PRIdPTR "\n", operand.GetIndex());
                 break;
 
             case ExprLowLevelOperand:
@@ -181,89 +181,89 @@ void PrintILExpr(const LowLevelILInstruction& instr, size_t indent) {
 
             case RegisterLowLevelOperand:
                 PrintIndent(indent);
-                printf("reg ");
+                LogInfo("reg ");
                 PrintRegister(instr.function, operand.GetRegister());
-                printf("\n");
+                LogInfo("\n");
                 break;
 
             case FlagLowLevelOperand:
                 PrintIndent(indent);
-                printf("flag ");
-                PrintFlag(instr.function, operand.GetFlag());
-                printf("\n");
+                LogInfo("flag ");
+                LogInfolag(instr.function, operand.GetFlag());
+                LogInfo("\n");
                 break;
 
             case FlagConditionLowLevelOperand:
                 PrintIndent(indent);
-                printf("flag condition ");
-                PrintFlagCondition(operand.GetFlagCondition());
-                printf("\n");
+                LogInfo("flag condition ");
+                LogInfolagCondition(operand.GetFlagCondition());
+                LogInfo("\n");
                 break;
 
             case SSARegisterLowLevelOperand:
                 PrintIndent(indent);
-                printf("ssa reg ");
+                LogInfo("ssa reg ");
                 PrintRegister(instr.function, operand.GetSSARegister().reg);
-                printf("#%" PRIdPTR "\n", operand.GetSSARegister().version);
+                LogInfo("#%" PRIdPTR "\n", operand.GetSSARegister().version);
                 break;
 
             case SSAFlagLowLevelOperand:
                 PrintIndent(indent);
-                printf("ssa flag ");
-                PrintFlag(instr.function, operand.GetSSAFlag().flag);
-                printf("#%" PRIdPTR " ", operand.GetSSAFlag().version);
+                LogInfo("ssa flag ");
+                LogInfolag(instr.function, operand.GetSSAFlag().flag);
+                LogInfo("#%" PRIdPTR " ", operand.GetSSAFlag().version);
                 break;
 
             case IndexListLowLevelOperand:
                 PrintIndent(indent);
-                printf("index list ");
+                LogInfo("index list ");
                 for (auto i : operand.GetIndexList())
-                    printf("%" PRIdPTR " ", i);
-                printf("\n");
+                    LogInfo("%" PRIdPTR " ", i);
+                LogInfo("\n");
                 break;
 
             case SSARegisterListLowLevelOperand:
                 PrintIndent(indent);
-                printf("ssa reg list ");
+                LogInfo("ssa reg list ");
                 for (auto i : operand.GetSSARegisterList()) {
                     PrintRegister(instr.function, i.reg);
-                    printf("#%" PRIdPTR " ", i.version);
+                    LogInfo("#%" PRIdPTR " ", i.version);
                 }
-                printf("\n");
+                LogInfo("\n");
                 break;
 
             case SSAFlagListLowLevelOperand:
                 PrintIndent(indent);
-                printf("ssa reg list ");
+                LogInfo("ssa reg list ");
                 for (auto i : operand.GetSSAFlagList()) {
-                    PrintFlag(instr.function, i.flag);
-                    printf("#%" PRIdPTR " ", i.version);
+                    LogInfolag(instr.function, i.flag);
+                    LogInfo("#%" PRIdPTR " ", i.version);
                 }
-                printf("\n");
+                LogInfo("\n");
                 break;
 
             default:
                 PrintIndent(indent);
-                printf("<invalid operand>\n");
+                LogInfo("<invalid operand>\n");
                 break;
         }
     }
 }
 
-void AnalyzeFunction(const Ref<Function>& func) {
-    printf("\n"); // prettier
+void AnalyzeLLILFunction(const Ref<Function>& func) {
+    LogInfo("\n"); // prettier
 
     // Get the name of the function and display it
     Ref<Symbol> sym = func->GetSymbol();
     if (sym)
-        printf("Function %s:\n", sym->GetFullName().c_str());
+        LogInfo("Function %s:\n", sym->GetFullName().c_str());
     else
-        printf("Function at 0x%" PRIx64 ":\n", func->GetStart());
+        LogInfo("Function at 0x%" PRIx64 ":\n", func->GetStart());
 
     // Fetch the low level IL for the function
     Ref<LowLevelILFunction> il = func->GetLowLevelIL();
     if (!il) {
-        printf("    Does not have LLIL\n\n");
+        LogInfo("    Does not have LLIL\n\n");
         return;
     }
 
@@ -277,10 +277,10 @@ void AnalyzeFunction(const Ref<Function>& func) {
             // Display core's interpretation of the IL instruction
             vector<InstructionTextToken> tokens;
             il->GetInstructionText(func, func->GetArchitecture(), instrIndex, tokens);
-            printf("    %" PRIdPTR " @ 0x%" PRIx64 "  ", instrIndex, instr.address);
+            LogInfo("    %" PRIdPTR " @ 0x%" PRIx64 "  ", instrIndex, instr.address);
             for (auto& token : tokens)
-                printf("%s", token.text.c_str());
-            printf("\n");
+                LogInfo("%s", token.text.c_str());
+            LogInfo("\n");
 
             // Generically parse the IL tree and display the parts
             PrintILExpr(instr, 2);
@@ -291,7 +291,7 @@ void AnalyzeFunction(const Ref<Function>& func) {
                     case LLIL_CONST:
                     case LLIL_CONST_PTR:
                     case LLIL_EXTERN_PTR:
-                        printf("        Found constant 0x%" PRIx64 "\n", expr.GetConstant());
+                        LogInfo("        Found constant 0x%" PRIx64 "\n", expr.GetConstant());
                         return false;  // Done parsing this
                     default:
                         break;
@@ -304,12 +304,12 @@ void AnalyzeFunction(const Ref<Function>& func) {
                 switch (expr.operation) {
                     case LLIL_LOAD:
                         if (expr.GetSourceExpr<LLIL_LOAD>().operation == LLIL_CONST_PTR) {
-                            printf("        Loading from address 0x%" PRIx64 "\n",
+                            LogInfo("        Loading from address 0x%" PRIx64 "\n",
                                 expr.GetSourceExpr<LLIL_LOAD>().GetConstant<LLIL_CONST_PTR>());
                             return false;  // Done parsing this
                         }
                         else if (expr.GetSourceExpr<LLIL_LOAD>().operation == LLIL_EXTERN_PTR) {
-                            printf("        Loading from address 0x%" PRIx64 "\n",
+                            LogInfo("        Loading from address 0x%" PRIx64 "\n",
                                 expr.GetSourceExpr<LLIL_LOAD>().GetConstant<LLIL_EXTERN_PTR>());
                             return false;  // Done parsing this
                         }
@@ -322,5 +322,5 @@ void AnalyzeFunction(const Ref<Function>& func) {
         }
     }
 
-    printf("\n");
+    LogInfo("\n");
 }

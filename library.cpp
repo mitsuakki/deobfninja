@@ -6,7 +6,7 @@
 #include "binaryninjaapi.h"
 #include "lowlevelilinstruction.h"
 
-#include "recipes/parser/ilparser.h"
+#include "recipes/parser/llilparser.h"
 
 using namespace BinaryNinja;
 using namespace std;

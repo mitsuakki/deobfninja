@@ -1,5 +1,5 @@
-#ifndef ILPARSER_H
-#define ILPARSER_H
+#ifndef LLILPARSER_H
+#define LLILPARSER_H
 
 #include <cinttypes>
 
@@ -14,4 +14,4 @@ void PrintFlag(const BinaryNinja::LowLevelILFunction* func, const uint32_t flag)
 void PrintILExpr(const BinaryNinja::LowLevelILInstruction& instr, size_t indent);
 void AnalyzeFunction(const BinaryNinja::Ref<BinaryNinja::Function>& func);
 
-#endif // ILPARSER_H
+#endif // LLILPARSER_H

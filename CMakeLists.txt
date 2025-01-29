@@ -1,32 +1,17 @@
-# MIT License
-# 
-# Copyright (c) 2015-2024 Vector 35 Inc
-# 
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
+# As of writing, CMake 3.13 or greater is required, although it is recommended to use the latest version
+# So, you can pick whatever version you have
 cmake_minimum_required(VERSION 3.24)
-set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
-project(TestPlugin CXX)
 
+set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
+project(eShard CXX)
+
+# Binary Ninja uses C++17 features, and requires a C++17 compatible compiler
 set(CMAKE_CXX_STANDARD 17)
 
+# Unless we are writing a plugin that needs Qt's UI, we'll specify this
 set(HEADLESS 1)
+
+# Point CMake to the API and include it for use
 find_path(
         BN_API_PATH
         NAMES binaryninjaapi.h
@@ -36,8 +21,12 @@ find_path(
 )
 add_subdirectory(${BN_API_PATH} api)
 
-add_library(${PROJECT_NAME} SHARED library.cpp)
+# Usage of source
+# Maybe need some kind of automatisation
+add_library(${PROJECT_NAME} SHARED library.cpp recipes/parser/ilparser.cpp)
 
+# Link with Binary Ninja
 target_link_libraries(${PROJECT_NAME} PUBLIC binaryninjaapi)
 
+# Tell `cmake --install` to copy the plugin to the plugins directory
 bn_install_plugin(${PROJECT_NAME})

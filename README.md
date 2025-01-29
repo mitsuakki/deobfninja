@@ -1,28 +1,28 @@
-# Binary Ninja C++ Plugin Template
+# bninja-recipes
 
-This is a Binary Ninja plugin template for building plugins using the C++ API.
-Included is support for automated builds using the GitHub Actions CI.
+## Installation
 
-## Compatibility
+```bash
+# Get the source
+git clone git@github.com:mitsuakki/bninja-recipes.git
 
-This repo has been tested on the following versions of Binary Ninja:
-* Binary Ninja 4.2.6455
-* Binary Ninja 4.1.5747
-* Binary Ninja 4.0.4958
+# Setup API
+cd binaryninja-api
+git submodule update --init --recursive
+git checkout $(cat ~/binaryninja/api_REVISION.txt | awk -F/ '{print $NF}') # to match the version of the binary ninja installation
+git submodule update --init --recursive
 
-And the following operating systems:
-* Windows 11
-* Windows 10
-* Ubuntu 24.04
-* Ubuntu 22.04
-* macOS 15
-* macOS 14
+# Configure an out-of-source build setup (API)
+cmake -S . -B build
 
-Other versions may work, though! Later versions of operating systems will likely load fine, though later versions of Binary Ninja may need to be recompiled and possibly have the CI patches reworked.
+# Compile API
+cmake --build build -j8
 
-## Credits
+# Build recipes
+cd ..
+cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build
 
-The CI configuration and patches are based upon the work of various Open Source projects made by members of the Binary Ninja community:
-
-* [setup-binary-ninja](https://github.com/emesare/setup-binary-ninja) by emesare (ISC License)
-* [binexport](https://github.com/google/binexport) by Google (Apache 2.0 License)
+# Install
+cmake --install build
+```

@@ -63,6 +63,7 @@ void Test4(const Ref<AnalysisContext> &analysisContext) {
             return;
         }
 
+        bool updated = false;
         for (auto& block : il->GetBasicBlocks()) {
             for (size_t instrIndex = block->GetStart(); instrIndex < block->GetEnd(); instrIndex++) {
                 LowLevelILInstruction instr = (*il)[instrIndex];
@@ -84,12 +85,17 @@ void Test4(const Ref<AnalysisContext> &analysisContext) {
                             );
 
                             il->ReplaceExpr(srcExpr.exprIndex, newInstr);
-                            PrintILExpr(instr, 2);
+                            updated = true;
+
+                            // PrintILExpr(instr, 2);
                         }
                     }
                 }
             }
         }
+
+        if (updated)
+            il->GenerateSSAForm();
     }
 }
 
@@ -147,6 +153,7 @@ void Test7(const Ref<AnalysisContext> &analysisContext) {
             return;
         }
 
+        bool updated = false;
         for (auto& block : il->GetBasicBlocks()) {
             // Loop though each instruction in the block
             for (size_t instrIndex = block->GetStart(); instrIndex < block->GetEnd(); instrIndex++)
@@ -168,12 +175,16 @@ void Test7(const Ref<AnalysisContext> &analysisContext) {
                             );
 
                             il->ReplaceExpr(srcExpr.exprIndex, newInstr);
+                            updated = true;
                             PrintMLILExpr(instr, 2);
                         }
                     }
                 }
             }
         }
+
+        if (updated)
+            il->GenerateSSAForm();
     }
 }
 
@@ -193,6 +204,10 @@ extern "C"
      */
     BINARYNINJAPLUGIN bool CorePluginInit()
     {
+        if (freopen("libeShard.log", "w", stdout) == nullptr) {
+            perror("Failed to redirect stdout to log file");
+        }
+
         PluginCommand::Register("eshard\\LLIL", "Print LLIL of all functions", Test);
         PluginCommand::Register("eshard\\LLIL_ADD", "Isolate an ADD manipulation in the main function", Test2);
 

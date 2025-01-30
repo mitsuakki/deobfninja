@@ -1,0 +1,45 @@
+name: CI and Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  BUILD_TYPE: RelWithDebInfo
+
+  # ATM, we'll just assume the version match with the installation one
+  BN_HASH_VERSION: $(git rev-parse HEAD)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Binary Ninja API
+        run: |
+          cd binaryninjaapi
+          git fetch --tags
+          git submodule update --init --recursive
+          git checkout ${{ env.BN_HASH_VERSION }}
+
+      - name: Set up C++ compiler
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-10
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10
+        shell: bash
+
+      - name: Configure CMake
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_CXX_STANDARD=17
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build

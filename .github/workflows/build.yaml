@@ -1,40 +1,45 @@
-name: Build
-
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
-env:
-  BUILD_TYPE: RelWithDebInfo
-
-jobs:
-  build:
-    runs-on: ubuntu
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: 'true'
-    - uses: seanmiddleditch/gha-setup-ninja@master
-    - name: Update submodule
-      run: |
-        cd binaryninjaapi
-        git fetch --tags
-        git checkout --force ${{matrix.version.name}}
-        git submodule update --init --recursive
-    - name: Patch api to allow building headlessly
-      if: ${{ matrix.version.use-patch }}
-      shell: bash
-      run: |
-        cd binaryninjaapi
-        git apply --verbose ${{matrix.version.patch-file}} 
-    - name: Configure CMake
-      run: cmake -B ${{github.workspace}}/build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-    - name: Upload artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{matrix.config.name}}-${{matrix.version.name}}
-        path: ${{github.workspace}}/build/*TestPlugin*
+#name: Build
+#
+#on:
+#  push:
+#    branches: [ "main" ]
+#  pull_request:
+#    branches: [ "main" ]
+#
+#env:
+#  BUILD_TYPE: RelWithDebInfo
+#
+#jobs:
+#  build:
+#    runs-on: ubuntu
+#
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v2
+#
+#      - name: Setup Binary Ninja API
+#        run: |
+#          cd binaryninjaapi
+#          git fetch --tags
+#          git submodule update --init --recursive
+#          git checkout ${{ secrets.API_REVISION }}
+#
+#      - name: Configure out-of-source build setup (API)
+#        run: |
+#          cd binaryninjaapi
+#          cmake -S . -B build
+#
+#      - name: Compile API
+#        run: |
+#          cd binaryninjaapi
+#          cmake --build build -j8
+#
+#      - name: Build plugin
+#        run: |
+#          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+#          cmake --build build
+#
+#      - name: Upload artifact into release
+#        uses: actions/upload-artifact@v3
+#        with:
+#          path: ${{github.workspace}}/build/libDeobfuscator.so

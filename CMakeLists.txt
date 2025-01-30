@@ -23,7 +23,7 @@ add_subdirectory(${BN_API_PATH} api)
 
 # Usage of source
 # Maybe need some kind of automatisation
-add_library(${PROJECT_NAME} SHARED library.cpp recipes/parser/llilparser.cpp recipes/parser/mlilparser.cpp)
+add_library(${PROJECT_NAME} SHARED library.cpp)
 
 # Link with Binary Ninja
 target_link_libraries(${PROJECT_NAME} PUBLIC binaryninjaapi)

@@ -7,19 +7,13 @@
 #include "lowlevelilinstruction.h"
 #include "mediumlevelilinstruction.h"
 
-#include "recipes/parser/llilparser.h"
-#include "recipes/parser/mlilparser.h"
+#include "binaryninjaapi/examples/mlil_parser/src/mlil_parser.cpp"
+#include "binaryninjaapi/examples/llil_parser/src/llil_parser.cpp"
 
 using namespace BinaryNinja;
 using namespace std;
 
-void Test(BinaryView *bv) {
-    for (auto& func : bv->GetAnalysisFunctionList()) {
-        AnalyzeLLILFunction(func);
-    }
-}
-
-void Test2(BinaryView *bv) {
+void SearchLLIL_ADD(BinaryView *bv) {
     for (auto& func : bv->GetAnalysisFunctionList()) {
         Ref<Symbol> sym = func->GetSymbol();
         // printf("%s", sym->GetFullName().c_str());
@@ -51,7 +45,7 @@ void Test2(BinaryView *bv) {
     }
 }
 
-void Test4(const Ref<AnalysisContext> &analysisContext) {
+void ReplaceLLIL_ADDIntoLLIL_MUL(const Ref<AnalysisContext> &analysisContext) {
     const Ref<Function> func = analysisContext->GetFunction();
     const Ref<Symbol> sym = func->GetSymbol();
     // printf("%s", sym->GetFullName().c_str());
@@ -99,13 +93,7 @@ void Test4(const Ref<AnalysisContext> &analysisContext) {
     }
 }
 
-void Test5(BinaryView *view) {
-    for (auto& func : view->GetAnalysisFunctionList()) {
-        AnalyzeMLILFunction(func);
-    }
-}
-
-void Test6(BinaryView *view) {
+void SearchMLIL_ADD(BinaryView *view) {
     for (auto& func : view->GetAnalysisFunctionList()) {
         Ref<Symbol> sym = func->GetSymbol();
         // printf("%s", sym->GetFullName().c_str());
@@ -131,7 +119,7 @@ void Test6(BinaryView *view) {
                             auto rightExpr = srcExpr.GetRightExpr<MLIL_ADD>();
                             if (leftExpr.operation == MLIL_VAR && rightExpr.operation == MLIL_VAR) {
                                 printf("\nProcessing instruction at 0x%" PRIx64 " with operation %d at block 0x%" PRIx64 "\n", instr.address, instr.operation, block->GetStart());
-                                PrintMLILExpr(instr, 2);
+                                PrintILExpr(instr, 2);
                             }
                         }
                     }
@@ -141,7 +129,7 @@ void Test6(BinaryView *view) {
     }
 }
 
-void Test7(const Ref<AnalysisContext> &analysisContext) {
+void ReplaceMLIL_ADDIntoMLIL_MUL(const Ref<AnalysisContext> &analysisContext) {
     const Ref<Function> func = analysisContext->GetFunction();
     const Ref<Symbol> sym = func->GetSymbol();
     // printf("%s", sym->GetFullName().c_str());
@@ -166,7 +154,7 @@ void Test7(const Ref<AnalysisContext> &analysisContext) {
                         auto rightExpr = srcExpr.GetRightExpr<MLIL_ADD>();
                         if (leftExpr.operation == MLIL_VAR && rightExpr.operation == MLIL_VAR) {
                             printf("\nProcessing instruction at 0x%" PRIx64 " with operation %d at block 0x%" PRIx64 "\n", instr.address, instr.operation, block->GetStart());
-                            PrintMLILExpr(instr, 2);
+                            PrintILExpr(instr, 2);
 
                             const ExprId newInstr = il->AddExpr(
                                 MLIL_MUL, srcExpr.size,
@@ -176,7 +164,7 @@ void Test7(const Ref<AnalysisContext> &analysisContext) {
 
                             il->ReplaceExpr(srcExpr.exprIndex, newInstr);
                             updated = true;
-                            PrintMLILExpr(instr, 2);
+                            PrintILExpr(instr, 2);
                         }
                     }
                 }
@@ -208,8 +196,7 @@ extern "C"
             perror("Failed to redirect stdout to log file");
         }
 
-        PluginCommand::Register("eshard\\LLIL", "Print LLIL of all functions", Test);
-        PluginCommand::Register("eshard\\LLIL_ADD", "Isolate an ADD manipulation in the main function", Test2);
+        PluginCommand::Register("eshard\\SearchLLIL_ADD", "Isolate an ADD manipulation in the main function", SearchLLIL_ADD);
 
         PluginCommand::Register("eshard\\All actvities", "Print all activities", [](BinaryView* view) {
             const Ref<Workflow> defaultWf = Workflow::Instance("core.function.baseAnalysis");
@@ -233,7 +220,7 @@ extern "C"
         // In the workflow generateMediumLevelIL...
 
         Ref<Workflow> customLLILPatcherWorkflow = Workflow::Instance("core.function.baseAnalysis")->Clone("LLILPatcherWorkflow");
-        customLLILPatcherWorkflow->RegisterActivity(new Activity("extension.llilpatcher", &Test4));
+        customLLILPatcherWorkflow->RegisterActivity(new Activity("extension.llilpatcher", &ReplaceLLIL_ADDIntoLLIL_MUL));
         customLLILPatcherWorkflow->Insert("core.function.generateMediumLevelIL", "extension.llilpatcher");
         Workflow::RegisterWorkflow(customLLILPatcherWorkflow,
             R"#({
@@ -243,11 +230,10 @@ extern "C"
 			})#"
         );
 
-        PluginCommand::Register("eshard\\MLIL", "Print MLIL of all functions", Test5);
-        PluginCommand::Register("eshard\\MLIL_ADD", "Isolate an ADD manipulation in the main function", Test6);
+        PluginCommand::Register("eshard\\SearchMLIL_ADD", "Isolate an ADD manipulation in the main function", SearchMLIL_ADD);
 
         Ref<Workflow> customMLILPatcherWorkflow = Workflow::Instance("core.function.baseAnalysis")->Clone("MLILPatcherWorkflow");
-        customMLILPatcherWorkflow->RegisterActivity(new Activity("extension.mlilpatcher", &Test7));
+        customMLILPatcherWorkflow->RegisterActivity(new Activity("extension.mlilpatcher", &ReplaceMLIL_ADDIntoMLIL_MUL));
         customMLILPatcherWorkflow->Insert("core.function.generateHighLevelIL", "extension.mlilpatcher");
         Workflow::RegisterWorkflow(customMLILPatcherWorkflow,
             R"#({

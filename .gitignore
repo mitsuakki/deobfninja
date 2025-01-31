@@ -1,5 +1,6 @@
 build
 cmake-build-debug
 .idea
-
-libeShard.log
+# libeShard.log
+out/
+.gdb_history

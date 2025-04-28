@@ -147,10 +147,18 @@ extern "C"
         return deps;
     }
 
+    void PatchJumps(AnalysisContext* analysisContext) {
+        Ref<Function> function = analysisContext->GetFunction();
+        std::string funcAddr = std::to_string(function->GetStart());
+
+        auto mlil = function->GetMediumLevelIL();
+        
+    }
+
     void RegisterCFFPatches() {
         PluginCommand::RegisterForFunction("eshard\\CFF\\Cyclomatic complexity", "Compute cyclomatic complexity", [](BinaryView* view, Function *func) {
-            int complexity = CalcCyclomaticComplexity(func);
-            LogInfo("Cyclomatic complexity of %s %d", func->GetSymbol()->GetFullName().c_str(), complexity);
+              int complexity = CalcCyclomaticComplexity(func);
+              LogInfo("Cyclomatic complexity of %s %d", func->GetSymbol()->GetFullName().c_str(), complexity);
         });
 
         PluginCommand::Register("eshard\\CFF\\Complex Functions", "Find complex functions", [](BinaryView* view) {
@@ -174,21 +182,8 @@ extern "C"
 
         PluginCommand::RegisterForFunction("eshard\\CFF\\Most Assigned Var", "Find the most assigned variable in HLIL", [](BinaryView* view, Function* func) {
             Variable var = GetMostAssignedVar(func);
-            LogInfo("Most assigned var (probably the state variable is %s", func->GetVariableName(var).c_str());
+            LogInfo("Most assigned var (probably the state variable) is %s", func->GetVariableName(var).c_str());
         });
-    }
-
-    BINARYNINJAPLUGIN bool CorePluginInit()
-    {
-        PluginCommand::Register("eshard\\All actvities", "Print all activities", [](BinaryView* view) {
-            const Ref<Workflow> defaultWf = Workflow::Instance("core.function.baseAnalysis");
-            for (const auto& activity : defaultWf->GetSubactivities()) {
-                LogInfo("Activity: %s", activity.c_str());
-            }
-        });
-
-        RegisterMBAPatches();
-        RegisterCFFPatches();
 
         PluginCommand::RegisterForFunction("eshard\\CFF\\Var dependencies", "Get var dependencies of the most assigned var", [](BinaryView* view, Function* func) {
             auto hlil = func->GetHighLevelIL();
@@ -205,6 +200,33 @@ extern "C"
                 LogInfo("Dependency: %s", func->GetVariableName(dep).c_str());
             }
         });
+    }
+    BINARYNINJAPLUGIN bool CorePluginInit()
+    {
+        PluginCommand::Register("eshard\\All actvities", "Print all activities", [](BinaryView* view) {
+            const Ref<Workflow> defaultWf = Workflow::Instance("core.function.baseAnalysis");
+            for (const auto& activity : defaultWf->GetSubactivities()) {
+                LogInfo("Activity: %s", activity.c_str());
+            }
+        });
+
+        RegisterMBAPatches();
+        RegisterCFFPatches();
+
+        Ref<Workflow> instructionInsertion = Workflow::Instance("core.function.baseAnalysis")->Clone("instructionInsertionWorkflow");
+        instructionInsertion->RegisterActivity(new Activity("extension.instructionInsertion", [](const Ref<AnalysisContext>& context) {
+            Ref<Function> func = context->GetFunction();
+            auto mlil = func->GetMediumLevelIL();
+        
+            for (const auto& block : mlil->GetBasicBlocks()) {
+                mlil->PrepareToCopyBlock(block);
+                for (size_t instrIdx = block->GetStart(); instrIdx < block->GetEnd(); instrIdx++) {
+                    
+                }
+            }
+        
+            mlil->GenerateSSAForm();
+        }));
 
         return true;
     }

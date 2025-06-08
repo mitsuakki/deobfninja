@@ -1,0 +1,5 @@
+pandas
+z3-solver
+sympy
+tqdm
+datetime

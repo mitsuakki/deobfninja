@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
-project(eShard CXX)
+project(deobfninja CXX)
 
 # Binary Ninja uses C++17 features, and requires a C++17 compatible compiler
 set(CMAKE_CXX_STANDARD 17)
@@ -21,9 +21,9 @@ find_path(
 )
 add_subdirectory(${BN_API_PATH} api)
 
-# Usage of source
-# Maybe need some kind of automatisation
-add_library(${PROJECT_NAME} SHARED library.cpp patterns/searcher.cpp patterns/examples/llil_add.hpp patterns/examples/mlil_add.hpp)
+file(GLOB_RECURSE SOURCES src/*.cpp)
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/include)
 
 # Link with Binary Ninja
 target_link_libraries(${PROJECT_NAME} PUBLIC binaryninjaapi)

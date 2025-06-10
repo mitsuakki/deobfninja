@@ -4,3 +4,4 @@ cmake-build-debug
 # libeShard.log
 out/
 .gdb_history
+.vscode/

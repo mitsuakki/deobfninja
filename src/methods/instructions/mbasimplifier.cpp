@@ -3,6 +3,10 @@
 
 using namespace BinaryNinja;
 
+MBASimplifier::MBASimplifier() : IDeobfuscationMethod("MBA Simplifier", DeobfuscationCategory::Workflow) {
+    this->isEnabled = true;
+}
+
 void MBASimplifier::execute(const Ref<AnalysisContext>& analysisContext)
 {
     const Ref<Function> func = analysisContext->GetFunction();
@@ -29,7 +33,7 @@ void MBASimplifier::execute(const Ref<AnalysisContext>& analysisContext)
                                 llil->Register(leftExpr.size, leftExpr.GetSourceRegister()),
                                 llil->Register(rightExpr.size, rightExpr.GetSourceRegister())
                             );
-                            
+
                             llil->ReplaceExpr(srcExpr.exprIndex, newInstr);
                             llil->GenerateSSAForm();
                         }

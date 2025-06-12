@@ -5,6 +5,9 @@ cmake_minimum_required(VERSION 3.24)
 set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 project(deobfninja CXX)
 
+# Define a macro in the build to be called by the program
+add_compile_definitions(PROJECT_NAME="${PROJECT_NAME}")
+
 # Binary Ninja uses C++17 features, and requires a C++17 compatible compiler
 set(CMAKE_CXX_STANDARD 17)
 

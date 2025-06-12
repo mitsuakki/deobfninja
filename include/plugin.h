@@ -23,7 +23,7 @@
 #ifndef PLUGIN_H
 #define PLUGIN_H
 
-#include "methods/deobfuscator.hpp"
+#include "deobfuscator.hpp"
 #include "../binaryninjaapi/binaryninjaapi.h"
 
 #endif //PLUGIN_H

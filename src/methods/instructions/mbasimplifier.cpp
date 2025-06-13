@@ -19,8 +19,6 @@ MBASimplifier::MBASimplifier() : IDeobfuscationMethod("MBA Simplifier", Deobfusc
             }
         }
     }
-
-    patternsToString();
 }
 
 bool MBASimplifier::loadPatternsFromCSV(const std::string& csvFilePath)
@@ -114,7 +112,42 @@ std::vector<std::tuple<std::string, size_t, LowLevelILInstruction, LowLevelILIns
                 LowLevelILInstruction instr = (*llil)[instrIndex];
                 for (const auto& pattern : patterns)
                 {
-                    // TODO
+                    auto obfuscatedTokens = tokenizeAndMapToLLIL(pattern.second);
+                    if (!obfuscatedTokens.empty()) {
+                        size_t patternLen = obfuscatedTokens.size();
+                        bool match = true;
+
+                        std::vector<LowLevelILInstruction> matchedInstrs;
+                        if (instrIndex + patternLen <= block->GetEnd()) {
+                            for (size_t j = 0; j < patternLen; ++j) {
+                                LowLevelILInstruction candidateInstr = (*llil)[instrIndex + j];
+                                const auto& tokenVariant = obfuscatedTokens[j];
+
+                                if (std::holds_alternative<std::vector<int>>(tokenVariant)) {
+                                    const auto& patternOps = std::get<std::vector<int>>(tokenVariant);
+                                    if (std::find(patternOps.begin(), patternOps.end(), candidateInstr.operation) == patternOps.end()) {
+                                        match = false;
+                                        break;
+                                    }
+                                } else if (std::holds_alternative<int>(tokenVariant)) {
+                                    int patternOp = std::get<int>(tokenVariant);
+                                    if (candidateInstr.operation != patternOp) {
+                                        match = false;
+                                        break;
+                                    }
+                                }
+                            }
+                        } else {
+                            match = false;
+                        }
+
+                        if (match) {
+                            // For simplicity, only store up to 3 instructions (expand as needed)
+                            LowLevelILInstruction left = matchedInstrs.size() > 1 ? matchedInstrs[1] : LowLevelILInstruction();
+                            LowLevelILInstruction right = matchedInstrs.size() > 2 ? matchedInstrs[2] : LowLevelILInstruction();
+                            matches.emplace_back(pattern.first, instrIndex, matchedInstrs[0], left, right);
+                        }
+                    }
                 }
             }
         }
@@ -142,13 +175,17 @@ size_t MBASimplifier::replaceObfuscatedWithSimple(const Ref<LowLevelILFunction>&
 
 void MBASimplifier::execute(const Ref<AnalysisContext>& analysisContext)
 {
-    // const Ref<Function> func = analysisContext->GetFunction();
-    // auto matches = searchPatternsInFunction(func);
-    // const Ref<LowLevelILFunction> llil = func->GetLowLevelIL();
+    const Ref<Function> func = analysisContext->GetFunction();
+    auto matches = searchPatternsInFunction(func);
 
-    // for (const auto& match : matches)
-    // {
-    //     const auto& [pattern, instrIndex, srcExpr, leftExpr, rightExpr] = match;
-    //     replaceObfuscatedWithSimple(llil, srcExpr, leftExpr, rightExpr);
-    // }
+    for (const auto& match : matches)
+    {
+        const auto& [pattern, instrIndex, srcExpr, leftExpr, rightExpr] = match;
+        std::cout << "Pattern: " << pattern
+                  << ", InstrIndex: " << instrIndex
+                  << ", SrcExpr.operation: " << srcExpr.operation
+                  << ", LeftExpr.operation: " << leftExpr.operation
+                  << ", RightExpr.operation: " << rightExpr.operation
+                  << std::endl;
+    }
 }

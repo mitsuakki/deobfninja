@@ -96,15 +96,31 @@ private:
 
     void patternsToString() {
         std::cout << "Number of patterns loaded: " << patterns.size() << std::endl;
+        auto printTokens = [](const std::vector<std::variant<int, std::vector<int>>>& tokens) {
+            for (size_t i = 0; i < tokens.size(); ++i) {
+                std::visit([](auto&& arg) {
+                    using T = std::decay_t<decltype(arg)>;
+                    if constexpr (std::is_same_v<T, int>) {
+                        std::cout << arg;
+                    } else if constexpr (std::is_same_v<T, std::vector<int>>) {
+                        std::cout << "[";
+                        for (size_t j = 0; j < arg.size(); ++j) {
+                            std::cout << arg[j];
+                            if (j != arg.size() - 1) std::cout << " ";
+                        }
+                        std::cout << "]";
+                    }
+                }, tokens[i]);
+                if (i != tokens.size() - 1) std::cout << ", ";
+            }
+        };
 
-        for (int i = 0; i < static_cast<int>(patterns.size()); ++i) {
-            const auto& pattern = patterns[i];
-            std::cout << i + 1 << ". original " << pattern.first << " ([";
+        for (const auto& pattern : patterns) {
+            std::cout << "original " << pattern.first << " ([";
             printTokens(tokenizeAndMapToLLIL(pattern.first));
 
             std::cout << "]) -> obfuscated " << pattern.second << " ([";
             printTokens(tokenizeAndMapToLLIL(pattern.second));
-            std::cout << "])" << std::endl;
         }
     }
 };

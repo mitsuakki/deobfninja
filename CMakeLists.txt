@@ -33,3 +33,18 @@ target_link_libraries(${PROJECT_NAME} PUBLIC binaryninjaapi)
 
 # Tell `cmake --install` to copy the plugin to the plugins directory
 bn_install_plugin(${PROJECT_NAME})
+
+# Unit testing
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/heads/main.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+add_executable(hello_gtest tests/hello_gtest.cpp)
+target_link_libraries(hello_gtest gtest_main)
+add_test(NAME HelloTest COMMAND hello_gtest)

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <iostream>
 #include "../../deobfuscator.hpp"
 
 /**
@@ -74,47 +75,35 @@ private:
         return -1;
     }
 
+    static void printTokens(const std::vector<std::variant<int, std::vector<int>>>& tokens) {
+        for (size_t i = 0; i < tokens.size(); ++i) {
+            std::visit([](auto&& arg) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, int>) {
+                    std::cout << arg;
+                } else if constexpr (std::is_same_v<T, std::vector<int>>) {
+                    std::cout << "[";
+                    for (size_t j = 0; j < arg.size(); ++j) {
+                        std::cout << arg[j];
+                        if (j != arg.size() - 1) std::cout << " ";
+                    }
+                    std::cout << "]";
+                }
+            }, tokens[i]);
+            if (i != tokens.size() - 1) std::cout << ", ";
+        }
+    }
+
     void patternsToString() {
         std::cout << "Number of patterns loaded: " << patterns.size() << std::endl;
-        for (const auto& pattern : patterns) {
-            auto tokensFirst = tokenizeAndMapToLLIL(pattern.first);
-            auto tokensSecond = tokenizeAndMapToLLIL(pattern.second);
 
-            std::cout << "original " << pattern.first << " ([";
-            for (size_t i = 0; i < tokensFirst.size(); ++i) {
-                std::visit([](auto&& arg) {
-                    using T = std::decay_t<decltype(arg)>;
-                    if constexpr (std::is_same_v<T, int>) {
-                        std::cout << arg;
-                    } else if constexpr (std::is_same_v<T, std::vector<int>>) {
-                        std::cout << "[";
-                        for (size_t j = 0; j < arg.size(); ++j) {
-                            std::cout << arg[j];
-                            if (j != arg.size() - 1) std::cout << " ";
-                        }
-                        std::cout << "]";
-                    }
-                }, tokensFirst[i]);
-                if (i != tokensFirst.size() - 1) std::cout << ", ";
-            }
+        for (int i = 0; i < static_cast<int>(patterns.size()); ++i) {
+            const auto& pattern = patterns[i];
+            std::cout << i + 1 << ". original " << pattern.first << " ([";
+            printTokens(tokenizeAndMapToLLIL(pattern.first));
 
             std::cout << "]) -> obfuscated " << pattern.second << " ([";
-            for (size_t i = 0; i < tokensSecond.size(); ++i) {
-                std::visit([](auto&& arg) {
-                    using T = std::decay_t<decltype(arg)>;
-                    if constexpr (std::is_same_v<T, int>) {
-                        std::cout << arg;
-                    } else if constexpr (std::is_same_v<T, std::vector<int>>) {
-                        std::cout << "[";
-                        for (size_t j = 0; j < arg.size(); ++j) {
-                            std::cout << arg[j];
-                            if (j != arg.size() - 1) std::cout << " ";
-                        }
-                        std::cout << "]";
-                    }
-                }, tokensSecond[i]);
-                if (i != tokensSecond.size() - 1) std::cout << ", ";
-            }
+            printTokens(tokenizeAndMapToLLIL(pattern.second));
             std::cout << "])" << std::endl;
         }
     }

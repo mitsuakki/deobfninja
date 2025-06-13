@@ -9,7 +9,7 @@
 class Deobfuscator {
 public:
     void init();
-
+    bool registerMethod(IDeobfuscationMethod* method);
     std::vector<IDeobfuscationMethod*> getMethods() const {
         return methods;
     }

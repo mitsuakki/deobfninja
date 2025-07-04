@@ -1,7 +1,10 @@
+#include <fstream>
+#include <iostream>
+#include <streambuf>
 #include "../include/plugin.h"
 using namespace BinaryNinja;
 
-// Should be defined in the CMakeLists.txt as a build macro
+// Should be defined in CMakeLists.txt as a build macro
 #ifndef PROJECT_NAME
     #define PROJECT_NAME "nameless-project"
 #endif
@@ -18,6 +21,8 @@ extern "C"
         std::string activityName = std::string("extension.") + PROJECT_NAME;
 
         customWorkflow->RegisterActivity(new Activity(activityName, [deobfuscator](const Ref<AnalysisContext>& context) {
+            // ToDO : A constant folding and renaming before all workflow to simplfy differents types of analysis
+            
             for (const auto& method : deobfuscator->getMethodsByCategory(DeobfuscationCategory::Workflow)) {
                 if (!method->isEnabled) continue;
                 method->execute(context);

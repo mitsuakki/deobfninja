@@ -1,3 +1,6 @@
+#ifndef METHODS_HPP
+#define METHODS_HPP
+
 #include <string>
 #include "../../binaryninjaapi/binaryninjaapi.h"
 
@@ -13,6 +16,7 @@ public:
 
     bool isEnabled = false;
     IDeobfuscationMethod(std::string description, DeobfuscationCategory category)
+        : description(std::move(description)), category(category)
     {
         BinaryNinja::LogInfo("IDeobfuscationMethod created: %s (Derived class: %s)", this->description.c_str(), typeid(*this).name());
     }
@@ -20,11 +24,8 @@ public:
     virtual ~IDeobfuscationMethod() = default;
     virtual void execute(const BinaryNinja::Ref<BinaryNinja::AnalysisContext>& analysisContext) = 0;
 
-    const std::string getDescription() const {
-        return this->description;
-    }
-
-    const DeobfuscationCategory getCategory() const {
-        return this->category;
-    }
+    const std::string getDescription() const { return this->description; }
+    const DeobfuscationCategory getCategory() const { return this->category; }
 };
+
+#endif // METHODS_HPP

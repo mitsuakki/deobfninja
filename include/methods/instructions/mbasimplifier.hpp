@@ -4,24 +4,77 @@
 #pragma once
 
 #include <iostream>
+#include <memory>
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <variant>
 #include "../../deobfuscator.hpp"
 
-/**
- * @brief The MBASimplifier class implements the IDeobfuscationMethod interface
- * to simplify MBA instructions in a binary.
- */
+// Forward declarations
+namespace BinaryNinja {
+    class Function;
+    class LowLevelILFunction;
+    class LowLevelILInstruction;
+    class AnalysisContext;
+    template<typename T> class Ref;
+}
+
+// Token types for the expression parser
+enum class TokenType {
+    OPERATOR,
+    OPERAND,
+    LPAREN,
+    RPAREN,
+    UNKNOWN
+};
+
+// Represents a parsed token
+struct Token {
+    TokenType type;
+    std::string value;
+    int llilOpcode;
+    
+    Token(TokenType t, std::string v, int op = -1) 
+        : type(t), value(std::move(v)), llilOpcode(op) {}
+};
+
+// Expression tree node
+struct ExprNode {
+    Token token;
+    std::vector<std::unique_ptr<ExprNode>> children;
+    
+    explicit ExprNode(Token t) : token(std::move(t)) {}
+};
+
+// Pattern matching structure
+struct MBAPattern {
+    std::string original;
+    std::string simplified;
+    std::unique_ptr<ExprNode> originalTree;
+    std::unique_ptr<ExprNode> simplifiedTree;
+    
+    MBAPattern(std::string orig, std::string simp) 
+        : original(std::move(orig)), simplified(std::move(simp)) {}
+};
+
 class MBASimplifier : public IDeobfuscationMethod
 {
 public:
     MBASimplifier();
 
+    // Pattern loading and management
     bool loadPatternsFromCSV(const std::string& csvFilePath);
+    bool loadPatternsFromDirectory(const std::string& directory);
+    size_t getPatternCount() const { return patterns.size(); }
+    const std::vector<MBAPattern>& getPatterns() const { return patterns; }
 
-    /**
-     * @brief Tokenizes an MBA expression and maps it to LLIL operations.
-     */
-    std::vector<std::variant<int, std::vector<int>>> tokenizeAndMapToLLIL(const std::string& expr) const;
+    // Tokenization and parsing
+    std::vector<Token> tokenize(const std::string& expr) const;
+    std::unique_ptr<ExprNode> parseExpression(const std::vector<Token>& tokens) const;
+    std::string expressionTreeToString(const ExprNode* node) const;
 
+    // Pattern matching and simplification
     std::vector<std::tuple<
         std::string, size_t,
         BinaryNinja::LowLevelILInstruction,
@@ -35,94 +88,51 @@ public:
         const BinaryNinja::LowLevelILInstruction& leftExpr,
         const BinaryNinja::LowLevelILInstruction& rightExpr);
 
+    // Main execution
     void execute(const BinaryNinja::Ref<BinaryNinja::AnalysisContext>& analysisContext) override;
 
 private:
-    std::vector<std::pair<std::string, std::string>> patterns;
-
-    /**
-     * @brief Maps a simple operation symbol (e.g., '+') to the corresponding BinaryNinja LLIL operation constant.
-     */
-    int mapSymbolToLLIL(const std::string& opSymbol) const {
-        if (opSymbol == "+") return LLIL_ADD;
-        if (opSymbol == "-") return LLIL_SUB;
-        if (opSymbol == "*") return LLIL_MUL;
-        if (opSymbol == "^") return LLIL_XOR;
-        if (opSymbol == "&") return LLIL_AND;
-        if (opSymbol == "|") return LLIL_OR;
-        if (opSymbol == "~") return LLIL_NOT;
-        if (opSymbol == "/") return LLIL_DIVU;
-        if (opSymbol == "%") return LLIL_MODU;
-        if (opSymbol == "<<" || opSymbol == "<<<") return LLIL_LSL;
-        if (opSymbol == ">>" || opSymbol == ">>>") return LLIL_LSR;
-        if (opSymbol == "==") return LLIL_CMP_E;
-        if (opSymbol == "!=") return LLIL_CMP_NE;
-        if (opSymbol == "<") return LLIL_CMP_ULT;
-        if (opSymbol == "<=") return LLIL_CMP_ULE;
-        if (opSymbol == ">") return LLIL_CMP_UGT;
-        if (opSymbol == ">=") return LLIL_CMP_UGE;
-        if (opSymbol == "x" || opSymbol == "y") return LLIL_REG;
-        
-        try {
-            size_t idx;
-            std::stoi(opSymbol, &idx);
-
-            if (idx == opSymbol.size())
-                return LLIL_CONST;
-                
-        } catch (const std::invalid_argument&) {}
-
-        return -1;
-    }
-
-    static void printTokens(const std::vector<std::variant<int, std::vector<int>>>& tokens) {
-        for (size_t i = 0; i < tokens.size(); ++i) {
-            std::visit([](auto&& arg) {
-                using T = std::decay_t<decltype(arg)>;
-                if constexpr (std::is_same_v<T, int>) {
-                    std::cout << arg;
-                } else if constexpr (std::is_same_v<T, std::vector<int>>) {
-                    std::cout << "[";
-                    for (size_t j = 0; j < arg.size(); ++j) {
-                        std::cout << arg[j];
-                        if (j != arg.size() - 1) std::cout << " ";
-                    }
-                    std::cout << "]";
-                }
-            }, tokens[i]);
-            if (i != tokens.size() - 1) std::cout << ", ";
-        }
-    }
-
-    void patternsToString() {
-        std::cout << "Number of patterns loaded: " << patterns.size() << std::endl;
-        auto printTokens = [](const std::vector<std::variant<int, std::vector<int>>>& tokens) {
-            for (size_t i = 0; i < tokens.size(); ++i) {
-                std::visit([](auto&& arg) {
-                    using T = std::decay_t<decltype(arg)>;
-                    if constexpr (std::is_same_v<T, int>) {
-                        std::cout << arg;
-                    } else if constexpr (std::is_same_v<T, std::vector<int>>) {
-                        std::cout << "[";
-                        for (size_t j = 0; j < arg.size(); ++j) {
-                            std::cout << arg[j];
-                            if (j != arg.size() - 1) std::cout << " ";
-                        }
-                        std::cout << "]";
-                    }
-                }, tokens[i]);
-                if (i != tokens.size() - 1) std::cout << ", ";
-            }
-        };
-
-        for (const auto& pattern : patterns) {
-            std::cout << "original " << pattern.first << " ([";
-            printTokens(tokenizeAndMapToLLIL(pattern.first));
-
-            std::cout << "]) -> obfuscated " << pattern.second << " ([";
-            printTokens(tokenizeAndMapToLLIL(pattern.second));
-        }
-    }
+    std::vector<MBAPattern> patterns;
+    
+    // Symbol mapping
+    static const std::unordered_map<std::string, int> symbolToLLIL;
+    static const std::unordered_map<char, int> operatorPrecedence;
+    
+    // Helper methods
+    int mapSymbolToLLIL(const std::string& symbol) const;
+    int getOperatorPrecedence(const std::string& op) const;
+    bool isOperator(const std::string& token) const;
+    bool isOperand(const std::string& token) const;
+    TokenType classifyToken(const std::string& token) const;
+    
+    // Expression parsing helpers
+    std::unique_ptr<ExprNode> parseExpressionRecursive(
+        const std::vector<Token>& tokens, 
+        size_t& pos, 
+        int minPrecedence = 0) const;
+    
+    std::unique_ptr<ExprNode> parsePrimary(
+        const std::vector<Token>& tokens, 
+        size_t& pos) const;
+    
+    // Pattern compilation
+    void compilePattern(MBAPattern& pattern);
+    bool compilePatternsFromStrings();
+    
+    // Pattern matching
+    bool matchPattern(const ExprNode* patternNode, const ExprNode* targetNode) const;
+    bool extractLLILSubtree(
+        const BinaryNinja::LowLevelILInstruction& instr,
+        std::unique_ptr<ExprNode>& result) const;
+    
+    // Utility methods
+    std::string trim(const std::string& str) const;
+    std::vector<std::string> split(const std::string& str, char delimiter) const;
+    bool isValidCSVLine(const std::string& line) const;
+    
+    // Debug helpers
+    void printExpressionTree(const ExprNode* node, int depth = 0) const;
+    void logPatternMatch(const std::string& pattern, size_t instrIndex) const;
 };
 
 #endif // METHODS_INSTRUCTIONS_MBA_SIMPLIFIER_HPP

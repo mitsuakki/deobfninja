@@ -16,10 +16,7 @@ public:
 
     bool isEnabled = false;
     IDeobfuscationMethod(std::string description, DeobfuscationCategory category)
-        : description(std::move(description)), category(category)
-    {
-        BinaryNinja::LogInfo("IDeobfuscationMethod created: %s (Derived class: %s)", this->description.c_str(), typeid(*this).name());
-    }
+        : description(std::move(description)), category(category) {}
 
     virtual ~IDeobfuscationMethod() = default;
     virtual void execute(const BinaryNinja::Ref<BinaryNinja::AnalysisContext>& analysisContext) = 0;

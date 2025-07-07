@@ -20,119 +20,121 @@ namespace BinaryNinja {
     template<typename T> class Ref;
 }
 
-// Token types for the expression parser
-enum class TokenType {
-    OPERATOR,
-    OPERAND,
-    LPAREN,
-    RPAREN,
-    UNKNOWN
-};
+namespace Instructions {
+    // Token types for the expression parser
+    enum class TokenType {
+        OPERATOR,
+        OPERAND,
+        LPAREN,
+        RPAREN,
+        UNKNOWN
+    };
 
-// Represents a parsed token
-struct Token {
-    TokenType type;
-    std::string value;
-    int llilOpcode;
-    
-    Token(TokenType t, std::string v, int op = -1) 
-        : type(t), value(std::move(v)), llilOpcode(op) {}
-};
+    // Represents a parsed token
+    struct Token {
+        TokenType type;
+        std::string value;
+        int llilOpcode;
+        
+        Token(TokenType t, std::string v, int op = -1) 
+            : type(t), value(std::move(v)), llilOpcode(op) {}
+    };
 
-// Expression tree node
-struct ExprNode {
-    Token token;
-    std::vector<std::unique_ptr<ExprNode>> children;
-    
-    explicit ExprNode(Token t) : token(std::move(t)) {}
-};
+    // Expression tree node
+    struct ExprNode {
+        Token token;
+        std::vector<std::unique_ptr<ExprNode>> children;
+        
+        explicit ExprNode(Token t) : token(std::move(t)) {}
+    };
 
-// Pattern matching structure
-struct MBAPattern {
-    std::string original;
-    std::string simplified;
-    std::unique_ptr<ExprNode> originalTree;
-    std::unique_ptr<ExprNode> simplifiedTree;
-    
-    MBAPattern(std::string orig, std::string simp) 
-        : original(std::move(orig)), simplified(std::move(simp)) {}
-};
+    // Pattern matching structure
+    struct MBAPattern {
+        std::string original;
+        std::string simplified;
+        std::unique_ptr<ExprNode> originalTree;
+        std::unique_ptr<ExprNode> simplifiedTree;
+        
+        MBAPattern(std::string orig, std::string simp) 
+            : original(std::move(orig)), simplified(std::move(simp)) {}
+    };
 
-class MBASimplifier : public IDeobfuscationMethod
-{
-public:
-    MBASimplifier();
+    class MBASimplifier : public IDeobfuscationMethod
+    {
+    public:
+        MBASimplifier();
 
-    // Pattern loading and management
-    bool loadPatternsFromCSV(const std::string& csvFilePath);
-    bool loadPatternsFromDirectory(const std::string& directory);
-    size_t getPatternCount() const { return patterns.size(); }
-    const std::vector<MBAPattern>& getPatterns() const { return patterns; }
+        // Pattern loading and management
+        bool loadPatternsFromCSV(const std::string& csvFilePath);
+        bool loadPatternsFromDirectory(const std::string& directory);
+        size_t getPatternCount() const { return patterns.size(); }
+        std::vector<MBAPattern>& getPatterns() { return patterns; }
 
-    // Tokenization and parsing
-    std::vector<Token> tokenize(const std::string& expr) const;
-    std::unique_ptr<ExprNode> parseExpression(const std::vector<Token>& tokens) const;
-    std::string expressionTreeToString(const ExprNode* node) const;
+        // Tokenization and parsing
+        std::vector<Token> tokenize(const std::string& expr) const;
+        std::unique_ptr<ExprNode> parseExpression(const std::vector<Token>& tokens) const;
+        std::string expressionTreeToString(const ExprNode* node) const;
 
-    // Pattern matching and simplification
-    std::vector<std::tuple<
-        std::string, size_t,
-        BinaryNinja::LowLevelILInstruction,
-        BinaryNinja::LowLevelILInstruction,
-        BinaryNinja::LowLevelILInstruction
-    >> searchPatternsInFunction(const BinaryNinja::Ref<BinaryNinja::Function>& func) const;
+        // Pattern matching and simplification
+        std::vector<std::tuple<
+            std::string, size_t,
+            BinaryNinja::LowLevelILInstruction,
+            BinaryNinja::LowLevelILInstruction,
+            BinaryNinja::LowLevelILInstruction
+        >> searchPatternsInFunction(const BinaryNinja::Ref<BinaryNinja::Function>& func) const;
 
-    size_t replaceObfuscatedWithSimple(
-        const BinaryNinja::Ref<BinaryNinja::LowLevelILFunction>& llil,
-        const BinaryNinja::LowLevelILInstruction& srcExpr,
-        const BinaryNinja::LowLevelILInstruction& leftExpr,
-        const BinaryNinja::LowLevelILInstruction& rightExpr);
+        size_t replaceObfuscatedWithSimple(
+            const BinaryNinja::Ref<BinaryNinja::LowLevelILFunction>& llil,
+            const BinaryNinja::LowLevelILInstruction& srcExpr,
+            const BinaryNinja::LowLevelILInstruction& leftExpr,
+            const BinaryNinja::LowLevelILInstruction& rightExpr);
 
-    // Main execution
-    void execute(const BinaryNinja::Ref<BinaryNinja::AnalysisContext>& analysisContext) override;
+        // Main execution
+        void execute(const BinaryNinja::Ref<BinaryNinja::AnalysisContext>& analysisContext) override;
 
-private:
-    std::vector<MBAPattern> patterns;
-    
-    // Symbol mapping
-    static const std::unordered_map<std::string, int> symbolToLLIL;
-    static const std::unordered_map<char, int> operatorPrecedence;
-    
-    // Helper methods
-    int mapSymbolToLLIL(const std::string& symbol) const;
-    int getOperatorPrecedence(const std::string& op) const;
-    bool isOperator(const std::string& token) const;
-    bool isOperand(const std::string& token) const;
-    TokenType classifyToken(const std::string& token) const;
-    
-    // Expression parsing helpers
-    std::unique_ptr<ExprNode> parseExpressionRecursive(
-        const std::vector<Token>& tokens, 
-        size_t& pos, 
-        int minPrecedence = 0) const;
-    
-    std::unique_ptr<ExprNode> parsePrimary(
-        const std::vector<Token>& tokens, 
-        size_t& pos) const;
-    
-    // Pattern compilation
-    void compilePattern(MBAPattern& pattern);
-    bool compilePatternsFromStrings();
-    
-    // Pattern matching
-    bool matchPattern(const ExprNode* patternNode, const ExprNode* targetNode) const;
-    bool extractLLILSubtree(
-        const BinaryNinja::LowLevelILInstruction& instr,
-        std::unique_ptr<ExprNode>& result) const;
-    
-    // Utility methods
-    std::string trim(const std::string& str) const;
-    std::vector<std::string> split(const std::string& str, char delimiter) const;
-    bool isValidCSVLine(const std::string& line) const;
-    
-    // Debug helpers
-    void printExpressionTree(const ExprNode* node, int depth = 0) const;
-    void logPatternMatch(const std::string& pattern, size_t instrIndex) const;
-};
+    private:
+        std::vector<MBAPattern> patterns;
+        
+        // Symbol mapping
+        static const std::unordered_map<std::string, int> symbolToLLIL;
+        static const std::unordered_map<char, int> operatorPrecedence;
+        
+        // Helper methods
+        int mapSymbolToLLIL(const std::string& symbol) const;
+        int getOperatorPrecedence(const std::string& op) const;
+        bool isOperator(const std::string& token) const;
+        bool isOperand(const std::string& token) const;
+        TokenType classifyToken(const std::string& token) const;
+        
+        // Expression parsing helpers
+        std::unique_ptr<ExprNode> parseExpressionRecursive(
+            const std::vector<Token>& tokens, 
+            size_t& pos, 
+            int minPrecedence = 0) const;
+        
+        std::unique_ptr<ExprNode> parsePrimary(
+            const std::vector<Token>& tokens, 
+            size_t& pos) const;
+        
+        // Pattern compilation
+        void compilePattern(MBAPattern& pattern);
+        bool compilePatternsFromStrings();
+        
+        // Pattern matching
+        bool matchPattern(const ExprNode* patternNode, const ExprNode* targetNode) const;
+        bool extractLLILSubtree(
+            const BinaryNinja::LowLevelILInstruction& instr,
+            std::unique_ptr<ExprNode>& result) const;
+        
+        // Utility methods
+        std::string trim(const std::string& str) const;
+        std::vector<std::string> split(const std::string& str, char delimiter) const;
+        bool isValidCSVLine(const std::string& line) const;
+        
+        // Debug helpers
+        void printExpressionTree(const ExprNode* node, int depth = 0) const;
+        void logPatternMatch(const std::string& pattern, size_t instrIndex) const;
+    };
 
-#endif // METHODS_INSTRUCTIONS_MBA_SIMPLIFIER_HPP
+    #endif // METHODS_INSTRUCTIONS_MBA_SIMPLIFIER_HPP
+}

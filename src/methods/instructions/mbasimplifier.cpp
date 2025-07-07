@@ -10,6 +10,7 @@
 #include <cctype>
 
 using namespace BinaryNinja;
+using namespace Instructions;
 
 // Static member definitions
 const std::unordered_map<std::string, int> MBASimplifier::symbolToLLIL = {
@@ -318,26 +319,9 @@ void MBASimplifier::compilePattern(MBAPattern& pattern) {
 std::vector<std::tuple<std::string, size_t, LowLevelILInstruction, LowLevelILInstruction, LowLevelILInstruction>> 
 MBASimplifier::searchPatternsInFunction(const Ref<Function>& func) const {
     std::vector<std::tuple<std::string, size_t, LowLevelILInstruction, LowLevelILInstruction, LowLevelILInstruction>> matches;
-    
-    const Ref<LowLevelILFunction> llil = func->GetLowLevelIL();
+    auto llil = func->GetLowLevelIL();
     if (!llil) {
         return matches;
-    }
-
-    for (Ref<BasicBlock>& block : llil->GetBasicBlocks()) {
-        for (size_t instrIndex = block->GetStart(); instrIndex < block->GetEnd(); instrIndex++) {
-            LowLevelILInstruction instr = (*llil)[instrIndex];
-            
-            std::unique_ptr<ExprNode> instrTree;
-            if (extractLLILSubtree(instr, instrTree)) {
-                for (const auto& pattern : patterns) {
-                    if (pattern.originalTree && matchPattern(pattern.originalTree.get(), instrTree.get())) {
-                        matches.emplace_back(pattern.original, instrIndex, instr, instr, instr);
-                        logPatternMatch(pattern.original, instrIndex);
-                    }
-                }
-            }
-        }
     }
 
     return matches;
@@ -448,8 +432,6 @@ bool MBASimplifier::matchPattern(const ExprNode* patternNode, const ExprNode* ta
         return false;
     }
     
-    // This is a simplified matching - in practice, you'd need more sophisticated
-    // pattern matching that can handle variable binding and substitution
     if (patternNode->token.llilOpcode != targetNode->token.llilOpcode) {
         return false;
     }

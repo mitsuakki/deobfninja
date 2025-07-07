@@ -36,7 +36,7 @@ TEST(DeobfuscatorTest, RegisterSameTypeTwiceReturnsFalse) {
 TEST(DeobfuscatorTest, RegisterDifferentTypesReturnsTrue) {
     Deobfuscator deob;
     DummyMethod* dummy = new DummyMethod();
-    MBASimplifier* mba = new MBASimplifier();
+    Instructions::MBASimplifier* mba = new Instructions::MBASimplifier();
     EXPECT_TRUE(deob.registerMethod(dummy));
     EXPECT_TRUE(deob.registerMethod(mba));
 
@@ -49,7 +49,7 @@ TEST(DeobfuscatorTest, InitRegistersMBASimplifier) {
     deob.init();
     // We can't directly check the private methods vector,
     // but we can try to register another MBASimplifier and expect false.
-    MBASimplifier* mba = new MBASimplifier();
+    Instructions::MBASimplifier* mba = new Instructions::MBASimplifier();
     EXPECT_FALSE(deob.registerMethod(mba)); 
     delete mba;
 }

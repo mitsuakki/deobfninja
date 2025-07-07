@@ -3,6 +3,8 @@
 #include <filesystem>
 #include "../../../include/methods/instructions/mbasimplifier.hpp"
 
+using namespace Instructions;
+
 class MBASimplifierTest : public ::testing::Test {
 protected:
     void SetUp() override {
@@ -23,6 +25,8 @@ protected:
 
 TEST_F(MBASimplifierTest, LoadPatternsFromCSVWorks) {
     MBASimplifier simplifier;
+    simplifier.getPatterns().clear();
+
     ASSERT_TRUE(simplifier.loadPatternsFromCSV("test_resources/mba-dataset-test.csv"));
     
     const auto& patterns = simplifier.getPatterns();
@@ -201,4 +205,31 @@ TEST_F(MBASimplifierTest, HandleWhitespaceExpression) {
     EXPECT_EQ(tokens[0].value, "a");
     EXPECT_EQ(tokens[1].value, "+");
     EXPECT_EQ(tokens[2].value, "b");
+}
+
+TEST_F(MBASimplifierTest, HandleMultipleParenthesisExpression) {
+    MBASimplifier simplifier;
+    auto tokens = simplifier.tokenize("((x ^ 1) + (x & 1))");
+
+    ASSERT_FALSE(tokens.empty());
+    auto tree = simplifier.parseExpression(tokens);
+    ASSERT_NE(tree, nullptr);
+
+    EXPECT_EQ(tree->token.value, "+");
+    ASSERT_EQ(tree->children.size(), 2);
+
+    auto* left = tree->children[0].get();
+    ASSERT_EQ(left->token.value, "^");
+    ASSERT_EQ(left->children.size(), 2);
+    EXPECT_EQ(left->children[0]->token.value, "x");
+    EXPECT_EQ(left->children[1]->token.value, "1");
+
+    auto* right = tree->children[1].get();
+    ASSERT_EQ(right->token.value, "&");
+    ASSERT_EQ(right->children.size(), 2);
+    EXPECT_EQ(right->children[0]->token.value, "x");
+    EXPECT_EQ(right->children[1]->token.value, "1");
+
+    std::string result = simplifier.expressionTreeToString(tree.get());
+    EXPECT_FALSE(result.empty());
 }

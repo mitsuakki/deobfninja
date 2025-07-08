@@ -1,4 +1,5 @@
 #include "../../../include/methods/flows/cffdetection.hpp"
+#include <cxxabi.h>  
 
 using namespace Flows;
 
@@ -98,30 +99,49 @@ std::vector<Variable> CFFDetection::GetVarDependencies(const Ref<HighLevelILFunc
 
     return deps;
 }
-void CFFDetection::execute(const Ref<AnalysisContext>&)
+
+
+void CFFDetection::execute(const Ref<AnalysisContext>& context)
 {
-    PluginCommand::RegisterForFunction("eshard\\CFF\\Cyclomatic Complexity", "Calculate the cyclomatic complexity of the function",
-    [](BinaryView* view, Function* func) {
-        Flows::CFFDetection detector;
-        int complexity = detector.CalcCyclomaticComplexity(func);
-        LogInfo("Cyclomatic complexity of %s: %d", func->GetSymbol()->GetFullName().c_str(), complexity);
-    });
+    int status;
+    const char* mangled = typeid(*this).name();
+    char* demangled = abi::__cxa_demangle(mangled, nullptr, nullptr, &status);
+    std::string className = (status == 0 && demangled) ? demangled : mangled;
+    free(demangled);  // Prevent memory leak
 
-    PluginCommand::RegisterForFunction("eshard\\CFF\\Flattening Score", "Estimate the flattening score of the function",
-    [](BinaryView* view, Function* func) {
-        Flows::CFFDetection detector;
-        double score = detector.CalcFlatteningScore(func);
-        LogInfo("Flattening score of %s: %.2f", func->GetSymbol()->GetFullName().c_str(), score);
-    });
+    std::string prefix = std::string(PROJECT_NAME) + "\\" + className + "\\";
 
-    PluginCommand::RegisterForFunction("eshard\\CFF\\Dispatcher Detection", "Try to detect the dispatcher variable",
-    [](BinaryView* view, Function* func) {
-        Flows::CFFDetection detector;
-        try {
-            Variable var = detector.GetMostAssignedVar(func);
-            LogInfo("Most assigned variable in %s: %s", func->GetSymbol()->GetFullName().c_str(), func->GetVariableName(var).c_str());
-        } catch (const std::exception& e) {
-            LogWarn("Dispatcher detection failed: %s", e.what());
+    PluginCommand::RegisterForFunction(
+        prefix + "Cyclomatic Complexity",
+        "Calculate the cyclomatic complexity of the function",
+        [](BinaryView* view, Function* func) {
+            Flows::CFFDetection detector;
+            int complexity = detector.CalcCyclomaticComplexity(func);
+            LogInfo("Cyclomatic complexity of %s: %d", func->GetSymbol()->GetFullName().c_str(), complexity);
         }
-    });
+    );
+
+    PluginCommand::RegisterForFunction(
+        prefix + "Flattening Score",
+        "Estimate the flattening score of the function",
+        [](BinaryView* view, Function* func) {
+            Flows::CFFDetection detector;
+            double score = detector.CalcFlatteningScore(func);
+            LogInfo("Flattening score of %s: %.2f", func->GetSymbol()->GetFullName().c_str(), score);
+        }
+    );
+
+    PluginCommand::RegisterForFunction(
+        prefix + "Dispatcher Detection",
+        "Try to detect the dispatcher variable",
+        [](BinaryView* view, Function* func) {
+            Flows::CFFDetection detector;
+            try {
+                Variable var = detector.GetMostAssignedVar(func);
+                LogInfo("Most assigned variable in %s: %s", func->GetSymbol()->GetFullName().c_str(), func->GetVariableName(var).c_str());
+            } catch (const std::exception& e) {
+                LogWarn("Dispatcher detection failed: %s", e.what());
+            }
+        }
+    );
 }

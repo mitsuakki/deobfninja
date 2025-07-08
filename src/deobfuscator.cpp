@@ -25,5 +25,5 @@ bool Deobfuscator::registerMethod(IDeobfuscationMethod* method) {
 
 void Deobfuscator::init() {
     registerMethod(new Instructions::MBASimplifier());
-    //registerMethod(new Flows::CFFDetection());
+    registerMethod(new Flows::CFFDetection());
 }

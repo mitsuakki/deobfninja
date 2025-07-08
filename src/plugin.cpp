@@ -10,7 +10,7 @@ using namespace BinaryNinja;
 #endif
 
 namespace {
-    void executeEnabledMethods(const std::shared_ptr<Deobfuscator>& deobfuscator, DeobfuscationCategory category, const Ref<AnalysisContext>& context)
+    void executeEnabledMethods(const std::shared_ptr<Deobfuscator>& deobfuscator, DeobfuscationCategory category, const Ref<AnalysisContext>& context = nullptr)
     {
         for (const auto& method : deobfuscator->getMethodsByCategory(category)) {
             if (!method->isEnabled)
@@ -46,8 +46,7 @@ extern "C"
             })#"
         );
 
-
-        // executeEnabledMethods(deobfuscator, DeobfuscationCategory::Function, context);
+        executeEnabledMethods(deobfuscator, DeobfuscationCategory::Function);
         return true;
     }
 }

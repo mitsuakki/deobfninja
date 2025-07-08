@@ -19,7 +19,8 @@ public:
         : description(std::move(description)), category(category) {}
 
     virtual ~IDeobfuscationMethod() = default;
-    virtual void execute(const BinaryNinja::Ref<BinaryNinja::AnalysisContext>& analysisContext) = 0;
+    virtual void execute(const BinaryNinja::Ref<BinaryNinja::AnalysisContext>& analysisContext = nullptr) = 0;
+
 
     const std::string getDescription() const { return this->description; }
     const DeobfuscationCategory getCategory() const { return this->category; }

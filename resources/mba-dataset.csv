@@ -1,9 +1,2 @@
 Original,Obfuscated
-~a & (~a ^ c),(a & ~c) ^ ~c
-((a ^ x) & y) | ((a ^ x) & y),a ^ r
-(a - w) + (x * (a - y)),(x+1)*a - (x*y + w)
-a - (x - b),a + b + r
-(a & x) | (b & y),((a ^ b) & x) ^ b
-(a ^ x) & y,(a & y) ^ (x & y)
-(a & x) >> y,(a >> y) & (x >> y)
-(a & x) | y,(a & (x & ~y)) | y
+a+b, a*b

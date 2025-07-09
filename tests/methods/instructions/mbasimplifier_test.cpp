@@ -1,8 +1,12 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include <filesystem>
+
+#include "../../../binaryninjaapi/binaryninjaapi.h"
+#include "../../../binaryninjaapi/lowlevelilinstruction.h"
 #include "../../../include/methods/instructions/mbasimplifier.hpp"
 
+using namespace BinaryNinja;
 using namespace Instructions;
 
 class MBASimplifierTest : public ::testing::Test {
@@ -33,11 +37,11 @@ TEST_F(MBASimplifierTest, LoadPatternsFromCSVWorks) {
     ASSERT_EQ(patterns.size(), 3);
     
     EXPECT_EQ(patterns[0].original, "a+b");
-    EXPECT_EQ(patterns[0].simplified, "a*b");
+    EXPECT_EQ(patterns[0].obfuscated, "a*b");
     EXPECT_EQ(patterns[1].original, "x^y");
-    EXPECT_EQ(patterns[1].simplified, "x&y");
+    EXPECT_EQ(patterns[1].obfuscated, "x&y");
     EXPECT_EQ(patterns[2].original, "(a+b)*c");
-    EXPECT_EQ(patterns[2].simplified, "(a^b)+c");
+    EXPECT_EQ(patterns[2].obfuscated, "(a^b)+c");
 }
 
 TEST_F(MBASimplifierTest, LoadPatternsFromDirectoryWorks) {
@@ -228,8 +232,37 @@ TEST_F(MBASimplifierTest, HandleMultipleParenthesisExpression) {
     ASSERT_EQ(right->token.value, "&");
     ASSERT_EQ(right->children.size(), 2);
     EXPECT_EQ(right->children[0]->token.value, "x");
+    EXPECT_EQ(right->children[1]->token.llilOpcode, LLIL_CONST);
     EXPECT_EQ(right->children[1]->token.value, "1");
 
     std::string result = simplifier.expressionTreeToString(tree.get());
     EXPECT_FALSE(result.empty());
 }
+
+// TEST(MBASimplifierTest, LoadManualPatternAndMatch)
+// {
+//     Ref<Architecture> arch = Architecture::GetByName("x86");
+//     Ref<Platform> platform = arch->GetStandalonePlatform();
+
+//     LowLevelILFunction* llil = new LowLevelILFunction(arch);
+
+//     ExprId reg0 = llil->Register(4, 0); // a
+//     ExprId reg1 = llil->Register(4, 1); // b
+//     ExprId add = llil->AddExpr(LLIL_ADD, 4, reg0, reg1); // a + b
+
+//     // eax = a + b
+//     llil->AddExpr(LLIL_SET_REG, 4, llil->GetRegisters()["eax"], add);
+//     llil->Finalize();
+
+//     BNCreateLowLevelILFunction(arch, new BNFunction(arch, ))
+//     Ref<Function> func = new Function(arch, platform, 0, nullptr);
+//     BNSetLowLevelILFunction(nullptr, *llil);
+
+//     MBASimplifier simplifier;
+//     simplifier.getPatterns() = {
+//         MBAPattern{"a+b", "a*b"}  // volontairement faux pour test
+//     };
+
+//     auto matches = simplifier.findMatches(func);
+//     EXPECT_EQ(matches.size(), 1);
+// }

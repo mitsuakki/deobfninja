@@ -103,7 +103,9 @@ class ExpressionGenerator:
         if ("+" not in left) and ("-" not in left) and ("*" not in left) and left.startswith("(") and left.endswith(")"):
             left = left[1:-1]
 
-        self.result.append([left, right])
+        # Ouais je sais mais c'est inversé plus parlant pour le dataset
+        # Et j'ai la flemme de renommer désolé...
+        self.result.append([right, left])
 
     def first_zero_index(self, v):
         """
@@ -114,8 +116,13 @@ class ExpressionGenerator:
             if v[i] == 0:
                 return i
         return -1
+<<<<<<< Updated upstream
 
     def compute_v(self, F: Matrix):
+=======
+ 
+    def compute_nullspace_vector(self, F: Matrix):
+>>>>>>> Stashed changes
         """
         Compute the nullspace vector v with F * v = 0.
         """

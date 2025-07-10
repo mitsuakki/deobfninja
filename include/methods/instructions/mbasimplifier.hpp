@@ -50,11 +50,11 @@ namespace Instructions {
 
     // Pattern matching structure
     struct MBAPattern {
-        std::string original;
         std::string obfuscated;
+        std::string original;
         
-        MBAPattern(std::string orig, std::string obf) 
-            : original(std::move(orig)), obfuscated(std::move(obf)) {}
+        MBAPattern(std::string obf, std::string orig) 
+            : obfuscated(std::move(obf)), original(std::move(orig)) {}
     };
 
     class MBASimplifier : public IDeobfuscationMethod

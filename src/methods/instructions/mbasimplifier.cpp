@@ -49,7 +49,7 @@ const std::unordered_map<char, int> MBASimplifier::operatorPrecedence = {
     {'~', 7}
 };
 
-MBASimplifier::MBASimplifier() 
+MBASimplifier::MBASimplifier()
     : IDeobfuscationMethod("Reduce complex operations", DeobfuscationCategory::Workflow) {
     this->isEnabled = true;
     loadPatternsFromDirectory("resources/");
@@ -97,14 +97,14 @@ bool MBASimplifier::loadPatternsFromCSV(const std::string& csvFilePath) {
         }
 
         std::stringstream ss(line);
-        std::string original, obfuscated;
+        std::string obfuscated, original;
 
-        if (std::getline(ss, original, ',') && std::getline(ss, obfuscated)) {
-            original = trim(original);
+        if (std::getline(ss, obfuscated, ',') && std::getline(ss, original)) {
             obfuscated = trim(obfuscated);
+            obfuscated = trim(original);
             
-            if (!original.empty() && !obfuscated.empty()) {
-                patterns.emplace_back(original, obfuscated);
+            if (!obfuscated.empty() && !original.empty()) {
+                patterns.emplace_back(obfuscated, original);
                 loadedPatterns++;
             }
         } else {
@@ -320,11 +320,11 @@ MBASimplifier::findMatches(const Ref<Function>& func) {
                 LowLevelILInstruction srcExpr = instr.GetSourceExpr<LLIL_SET_REG>();
 
                 for (const auto& pattern : patterns) {
-                    auto tokens = tokenize(pattern.original);
+                    auto tokens = tokenize(pattern.obfuscated);
                     auto tree = parseExpression(tokens);
 
                     if (matchPattern(tree.get(), srcExpr)) {
-                        matches.emplace_back(pattern.original, instrIndex, srcExpr);
+                        matches.emplace_back(pattern.obfuscated, instrIndex, srcExpr);
                     }
                 }
             }
@@ -352,19 +352,28 @@ void MBASimplifier::execute(const Ref<AnalysisContext>& analysisContext) {
     const Ref<Function> func = analysisContext->GetFunction();
     const Ref<LowLevelILFunction> llil = func->GetLowLevelIL();
 
-    auto matches = findMatches(func);
-    std::cout << "[MBASimplifier] Found " << matches.size() << " matches:\n";
+    // auto matches = findMatches(func);
+    // std::cout << "[MBASimplifier] Found " << matches.size() << " matches:\n";
 
+<<<<<<< Updated upstream
     size_t replacedCount = 0;
     for (const auto& match : matches) {
         const std::string& pattern = std::get<0>(match);
         size_t index = std::get<1>(match);
         const LowLevelILInstruction& srcExpr = std::get<2>(match); 
+=======
+    // size_t replacedCount = 0;
+    // for (const auto& match : matches) {
+    //     const std::string& pattern = std::get<0>(match);
+    //     size_t index = std::get<1>(match);
+    //     const HighLevelILInstruction& srcExpr = std::get<2>(match); 
+>>>>>>> Stashed changes
 
-        std::cout << "  [Debug] At index " << index << ", matched pattern: \"" << pattern << "\"\n";
-        std::cout << "  [Debug] Matched expression (" << std::showbase << std::hex << srcExpr.address << std::dec << "):\n";
-        Utils::PrintILExpr(srcExpr, 1);
+    //     std::cout << "  [Debug] At index " << index << ", matched pattern: \"" << pattern << "\"\n";
+    //     std::cout << "  [Debug] Matched expression (" << std::showbase << std::hex << srcExpr.address << std::dec << "):\n";
+    //     Utils::PrintILExpr(srcExpr, 1);
 
+<<<<<<< Updated upstream
         if (srcExpr.operation == LLIL_MUL || srcExpr.operation == LLIL_ADD || srcExpr.operation == LLIL_XOR) {
             const LowLevelILInstruction leftExpr = srcExpr.GetLeftExpr();
             const LowLevelILInstruction rightExpr = srcExpr.GetRightExpr();
@@ -375,8 +384,25 @@ void MBASimplifier::execute(const Ref<AnalysisContext>& analysisContext) {
             std::cout << "  [Info] Skipped non-binary operation at index " << index << "\n";
         }
     }
+=======
+    //     if (srcExpr.operation == HLIL_MUL || srcExpr.operation == HLIL_ADD || srcExpr.operation == HLIL_XOR) {
+    //         const HighLevelILInstruction leftExpr = srcExpr.GetLeftExpr();
+    //         const HighLevelILInstruction rightExpr = srcExpr.GetRightExpr();
 
-    std::cout << "[MBASimplifier] Replaced " << replacedCount << " expressions\n";
+    //         replacedCount += replaceObfuscatedWithSimple(hlil, srcExpr, leftExpr, rightExpr);
+    //         std::cout << "  [Info] Replaced pattern \"" << pattern << "\" at instruction index " << index << "\n";
+    //     } else {
+    //         std::cout << "  [Info] Skipped non-binary operation at index " << index << "\n";
+    //     }
+    // }
+>>>>>>> Stashed changes
+
+    // std::cout << "[MBASimplifier] Replaced " << replacedCount << " expressions\n";
+    
+    if (!hlil) {
+        LogAlert("HLIL pas dispo à cette couche");
+        return;
+    }
 }
 
 int MBASimplifier::mapSymbolToLLIL(const std::string& symbol) const {
@@ -435,7 +461,7 @@ bool MBASimplifier::isValidCSVLine(const std::string& line) const {
     std::string trimmed = trim(line);
     return !trimmed.empty() && 
            trimmed[0] != '#' && 
-           trimmed != "Original,Obfuscated" &&
+           trimmed != "Obfuscated,Original" &&
            trimmed.find(',') != std::string::npos;
 }
 

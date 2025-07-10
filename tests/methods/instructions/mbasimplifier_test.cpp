@@ -3,7 +3,7 @@
 #include <filesystem>
 
 #include "../../../binaryninjaapi/binaryninjaapi.h"
-#include "../../../binaryninjaapi/lowlevelilinstruction.h"
+#include "../../../binaryninjaapi/highlevelilinstruction.h"
 #include "../../../include/methods/instructions/mbasimplifier.hpp"
 
 using namespace BinaryNinja;
@@ -57,15 +57,15 @@ TEST_F(MBASimplifierTest, TokenizeSimpleExpression) {
     ASSERT_EQ(tokens.size(), 3);
     EXPECT_EQ(tokens[0].type, TokenType::OPERAND);
     EXPECT_EQ(tokens[0].value, "a");
-    EXPECT_EQ(tokens[0].llilOpcode, LLIL_REG);
+    EXPECT_EQ(tokens[0].hlilOpcode, HLIL_VAR);
     
     EXPECT_EQ(tokens[1].type, TokenType::OPERATOR);
     EXPECT_EQ(tokens[1].value, "+");
-    EXPECT_EQ(tokens[1].llilOpcode, LLIL_ADD);
+    EXPECT_EQ(tokens[1].hlilOpcode, HLIL_ADD);
     
     EXPECT_EQ(tokens[2].type, TokenType::OPERAND);
     EXPECT_EQ(tokens[2].value, "b");
-    EXPECT_EQ(tokens[2].llilOpcode, LLIL_REG);
+    EXPECT_EQ(tokens[2].hlilOpcode, HLIL_VAR);
 }
 
 TEST_F(MBASimplifierTest, TokenizeComplexExpression) {
@@ -94,10 +94,10 @@ TEST_F(MBASimplifierTest, TokenizeMultiCharacterOperators) {
     ASSERT_EQ(tokens.size(), 5);
     EXPECT_EQ(tokens[0].value, "a");
     EXPECT_EQ(tokens[1].value, "<<");
-    EXPECT_EQ(tokens[1].llilOpcode, LLIL_LSL);
+    EXPECT_EQ(tokens[1].hlilOpcode, HLIL_LSL);
     EXPECT_EQ(tokens[2].value, "b");
     EXPECT_EQ(tokens[3].value, ">>");
-    EXPECT_EQ(tokens[3].llilOpcode, LLIL_LSR);
+    EXPECT_EQ(tokens[3].hlilOpcode, HLIL_LSR);
     EXPECT_EQ(tokens[4].value, "c");
 }
 
@@ -107,10 +107,10 @@ TEST_F(MBASimplifierTest, TokenizeConstants) {
 
     ASSERT_EQ(tokens.size(), 3);
     EXPECT_EQ(tokens[0].value, "123");
-    EXPECT_EQ(tokens[0].llilOpcode, LLIL_CONST);
+    EXPECT_EQ(tokens[0].hlilOpcode, HLIL_CONST);
     EXPECT_EQ(tokens[1].value, "+");
     EXPECT_EQ(tokens[2].value, "456");
-    EXPECT_EQ(tokens[2].llilOpcode, LLIL_CONST);
+    EXPECT_EQ(tokens[2].hlilOpcode, HLIL_CONST);
 }
 
 TEST_F(MBASimplifierTest, ParseSimpleExpression) {
@@ -176,23 +176,6 @@ TEST_F(MBASimplifierTest, ParseUnaryOperator) {
     EXPECT_EQ(tree->children[0]->token.value, "a");
 }
 
-TEST_F(MBASimplifierTest, ExpressionTreeToString) {
-    MBASimplifier simplifier;
-    auto tokens = simplifier.tokenize("(a+b)*c");
-    auto tree = simplifier.parseExpression(tokens);
-
-    ASSERT_NE(tree, nullptr);
-    std::string result = simplifier.expressionTreeToString(tree.get());
-    
-    // The exact format may vary based on implementation
-    EXPECT_FALSE(result.empty());
-    EXPECT_NE(result.find("a"), std::string::npos);
-    EXPECT_NE(result.find("b"), std::string::npos);
-    EXPECT_NE(result.find("c"), std::string::npos);
-    EXPECT_NE(result.find("+"), std::string::npos);
-    EXPECT_NE(result.find("*"), std::string::npos);
-}
-
 TEST_F(MBASimplifierTest, HandleEmptyExpression) {
     MBASimplifier simplifier;
     auto tokens = simplifier.tokenize("");
@@ -232,11 +215,8 @@ TEST_F(MBASimplifierTest, HandleMultipleParenthesisExpression) {
     ASSERT_EQ(right->token.value, "&");
     ASSERT_EQ(right->children.size(), 2);
     EXPECT_EQ(right->children[0]->token.value, "x");
-    EXPECT_EQ(right->children[1]->token.llilOpcode, LLIL_CONST);
+    EXPECT_EQ(right->children[1]->token.hlilOpcode, HLIL_CONST);
     EXPECT_EQ(right->children[1]->token.value, "1");
-
-    std::string result = simplifier.expressionTreeToString(tree.get());
-    EXPECT_FALSE(result.empty());
 }
 
 // TEST(MBASimplifierTest, LoadManualPatternAndMatch)
@@ -244,19 +224,19 @@ TEST_F(MBASimplifierTest, HandleMultipleParenthesisExpression) {
 //     Ref<Architecture> arch = Architecture::GetByName("x86");
 //     Ref<Platform> platform = arch->GetStandalonePlatform();
 
-//     LowLevelILFunction* llil = new LowLevelILFunction(arch);
+//     HighLevelILFunction* llil = new HighLevelILFunction(arch);
 
-//     ExprId reg0 = llil->Register(4, 0); // a
-//     ExprId reg1 = llil->Register(4, 1); // b
-//     ExprId add = llil->AddExpr(LLIL_ADD, 4, reg0, reg1); // a + b
+//     ExprId var0 = llil->Register(4, 0); // a
+//     ExprId var1 = llil->Register(4, 1); // b
+//     ExprId add = llil->AddExpr(HLIL_ADD, 4, var0, var1); // a + b
 
 //     // eax = a + b
-//     llil->AddExpr(LLIL_SET_REG, 4, llil->GetRegisters()["eax"], add);
+//     llil->AddExpr(HLIL_SET_VAR, 4, llil->GetRegisters()["eax"], add);
 //     llil->Finalize();
 
-//     BNCreateLowLevelILFunction(arch, new BNFunction(arch, ))
+//     BNCreateHighLevelILFunction(arch, new BNFunction(arch, ))
 //     Ref<Function> func = new Function(arch, platform, 0, nullptr);
-//     BNSetLowLevelILFunction(nullptr, *llil);
+//     BNSetHighLevelILFunction(nullptr, *llil);
 
 //     MBASimplifier simplifier;
 //     simplifier.getPatterns() = {

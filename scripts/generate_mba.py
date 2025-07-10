@@ -1,11 +1,12 @@
 import os
-import csv
-import random
 import argparse
 import pandas as pd
 
 from z3 import *
 from sympy import Matrix, zeros, lcm
+from sympy.logic.boolalg import Or, And, Not, BooleanTrue, BooleanFalse
+from sympy.abc import x, y, z
+from itertools import product, combinations_with_replacement
 from tqdm import tqdm
 from datetime import datetime
 
@@ -30,13 +31,51 @@ class ExpressionGenerator:
 
         # A dictionnary of boolean expressions and their corresponding truth tables.
         # A bitwise expression En with n variables has 2^(2^n) different reduced Boolean expression
-        # ToDo: Generate all of them automatically using a library like sympy or with a custom function.
         self.exprs = {
             "x": [0, 0, 1, 1], "y": [0, 1, 0, 1], "-1": [1, 1, 1, 1], "~x": [1, 1, 0, 0], "~y": [1, 0, 1, 0],
             "x&y": [0, 0, 0, 1], "~x&y": [0, 1, 0, 0], "x&~y": [0, 0, 1, 0], "~(x&y)": [1, 1, 1, 0],
             "x|y": [0, 1, 1, 1], "~x|y": [1, 1, 0, 1], "x|~y": [1, 0, 1, 1], "~(x|y)": [1, 0, 0, 0],
             "x^y": [0, 1, 1, 0], "~x^y": [1, 0, 0, 1], "x^~y": [1, 0, 0, 1], "~(x^y)": [1, 0, 0, 1]
         }
+        # self.exprs = self.generate_all_exprs()
+
+    def generate_all_exprs(self):
+        """
+        Automatically generate all simplified boolean expressions with their truth tables
+        for the given number of variables (e.g., x, y, z).
+        """
+        # Define variables dynamically
+        var_symbols = [x, y, z][:self.nVars]
+
+        # Generate all possible input combinations (truth assignments)
+        input_combinations = list(product([False, True], repeat=self.nVars))
+
+        # Generate candidate expressions
+        basic_ops = [lambda a: a, Not]
+        binary_ops = [And, Or, Xor]
+
+        # Set to store unique truth tables to avoid duplicates
+        unique_tables = {}
+        
+        # Generate all combinations of operations (up to 2-variable expressions)
+        for a, b in combinations_with_replacement(var_symbols, 2):
+            for bin_op in binary_ops:
+                for una_a in basic_ops:
+                    for una_b in basic_ops:
+                        try:
+                            expr = bin_op(una_a(a), una_b(b))
+                            truth = tuple(bool(expr.subs(dict(zip(var_symbols, inputs)))) for inputs in input_combinations)
+                            if truth not in unique_tables.values():
+                                unique_tables[str(expr)] = truth
+                        except Exception:
+                            continue
+
+        # Add constants manually
+        unique_tables[str(BooleanTrue())] = tuple([True] * len(input_combinations))
+        unique_tables[str(BooleanFalse())] = tuple([False] * len(input_combinations))
+
+        # Replace original dictionary
+        self.exprs = {k: [int(v) for v in table] for k, table in unique_tables.items()}
 
     def index_combine(self, start: int, tmp: list):
         """
@@ -116,13 +155,8 @@ class ExpressionGenerator:
             if v[i] == 0:
                 return i
         return -1
-<<<<<<< Updated upstream
 
-    def compute_v(self, F: Matrix):
-=======
- 
     def compute_nullspace_vector(self, F: Matrix):
->>>>>>> Stashed changes
         """
         Compute the nullspace vector v with F * v = 0.
         """
@@ -157,7 +191,7 @@ class ExpressionGenerator:
 
         return v
 
-    def generate(self):
+    def generate_expressions(self):
         """
         Generate MBA expressions for all possible combinations of terms in exprs.
         """
@@ -171,7 +205,7 @@ class ExpressionGenerator:
                 key = list(self.exprs.keys())[j]
                 F = F.col_insert(F.shape[1], Matrix(self.exprs[key]))
 
-            v = self.compute_v(F)
+            v = self.compute_nullspace_vector(F)
             if v == zeros(self.nTerms, 1):
                 continue # Skip if no valid solution is found !
 
@@ -194,14 +228,14 @@ if __name__ == "__main__":
     parser.add_argument("--numOfVars", type=int, default=2, help="Number of variables")
 
     args = parser.parse_args()
-
+    
     if args.numOfVars >= 2:
         datasetPath = f"../resources/mba-dataset-{args.numOfVars}-{args.numOfTerms}-{datetime.now().strftime('%Y%m%d')}.csv"
         if not os.path.exists(datasetPath):
             generator = ExpressionGenerator(nVars=args.numOfVars, nTerms=args.numOfTerms)
-            generator.generate()
+            generator.generate_expressions()
 
-            df = pd.DataFrame(generator.result, columns=["Original", "Obfuscated"])
+            df = pd.DataFrame(generator.result, columns=["Obfuscated", "Original"])
             df.to_csv(datasetPath, mode="a+", header=True, index=False)
 
             # x = BitVec('x', 32)

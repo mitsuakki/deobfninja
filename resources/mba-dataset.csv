@@ -1,2 +1,2 @@
-Original,Obfuscated
-a+b, a*b
+Obfuscated,Original
+a+b-(a&b)*2,a-b

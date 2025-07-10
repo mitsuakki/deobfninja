@@ -36,6 +36,8 @@ bn_install_plugin(${PROJECT_NAME})
 
 # ===================== Tests ============================
 include(FetchContent)
+
+# GoogleTest
 FetchContent_Declare(
     googletest
     URL https://github.com/google/googletest/archive/refs/heads/main.zip
@@ -56,3 +58,16 @@ target_link_libraries(${PROJECT_NAME}_gtest
 )
 
 add_test(NAME DeobfuscatorTests COMMAND ${PROJECT_NAME}_gtest)
+
+# ===================== Third-party libraries ============================
+
+# magic_enum (header-only)
+FetchContent_Declare(
+    magic_enum
+    GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
+    GIT_TAG v0.9.7
+)
+FetchContent_MakeAvailable(magic_enum)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC magic_enum)
+target_link_libraries(${PROJECT_NAME}_gtest PRIVATE magic_enum)

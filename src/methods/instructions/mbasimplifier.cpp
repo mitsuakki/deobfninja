@@ -1,5 +1,5 @@
 #include "../../../include/methods/instructions/mbasimplifier.hpp"
-#include "../../../binaryninjaapi/lowlevelilinstruction.h"
+#include "../../../binaryninjaapi/highlevelilinstruction.h"
 
 #include "../../../include/utils/ilprinter.hpp"
 
@@ -15,26 +15,43 @@ using namespace BinaryNinja;
 using namespace Instructions;
 
 // Static member definitions
-const std::unordered_map<std::string, int> MBASimplifier::symbolToLLIL = {
-    {"+", LLIL_ADD}, {"-", LLIL_SUB}, {"*", LLIL_MUL}, {"^", LLIL_XOR},
-    {"&", LLIL_AND}, {"|", LLIL_OR}, {"~", LLIL_NOT}, {"/", LLIL_DIVU},
-    {"%", LLIL_MODU}, {"<<", LLIL_LSL}, {">>", LLIL_LSR}, {"<<<", LLIL_LSL},
-    {">>>", LLIL_LSR}, {"==", LLIL_CMP_E}, {"!=", LLIL_CMP_NE},
-    {"<", LLIL_CMP_ULT}, {"<=", LLIL_CMP_ULE}, {">", LLIL_CMP_UGT},
-    {">=", LLIL_CMP_UGE}
+const std::unordered_map<std::string, int> MBASimplifier::symbolToHLIL = {
+    {"+", HLIL_ADD}, {"-", HLIL_SUB}, {"*", HLIL_MUL}, {"^", HLIL_XOR},
+    {"&", HLIL_AND}, {"|", HLIL_OR}, {"~", HLIL_NOT}, {"/", HLIL_DIVU},
+    {"%", HLIL_MODU}, {"<<", HLIL_LSL}, {">>", HLIL_LSR}, {"<<<", HLIL_LSL},
+    {">>>", HLIL_LSR}, {"==", HLIL_CMP_E}, {"!=", HLIL_CMP_NE},
+    {"<", HLIL_CMP_ULT}, {"<=", HLIL_CMP_ULE}, {">", HLIL_CMP_UGT},
+    {">=", HLIL_CMP_UGE}
 };
 
-const std::unordered_map<int, std::string> MBASimplifier::llilToSymbol = []() {
+int MBASimplifier::mapSymbolToHLIL(const std::string& symbol) const {
+    auto it = symbolToHLIL.find(symbol);
+    if (it != symbolToHLIL.end()) {
+        return it->second;
+    }
+
+    if (symbol.size() == 1 && std::isalpha(static_cast<unsigned char>(symbol[0]))) {
+        return HLIL_VAR;
+    }
+    
+    if (std::all_of(symbol.begin(), symbol.end(), ::isdigit)) {
+        return HLIL_CONST;
+    }
+    
+    return -1;
+}
+
+const std::unordered_map<int, std::string> MBASimplifier::hlilToSymbol = []() {
     std::unordered_map<int, std::string> rev;
-    for (const auto& [sym, op] : MBASimplifier::symbolToLLIL) {
+    for (const auto& [sym, op] : MBASimplifier::symbolToHLIL) {
         rev[op] = sym;
     }
     return rev;
 }();
 
-std::string MBASimplifier::OperationToString(BNLowLevelILOperation op) const {
-    auto it = llilToSymbol.find(op);
-    if (it != llilToSymbol.end()) {
+std::string MBASimplifier::OperationToString(BNHighLevelILOperation op) const {
+    auto it = hlilToSymbol.find(op);
+    if (it != hlilToSymbol.end()) {
         return it->second;
     }
     return "UNKNOWN::" + op;
@@ -149,9 +166,9 @@ std::vector<Token> MBASimplifier::tokenize(const std::string& expr) const {
         // Handle multi-character operators
         if (i + 1 < cleanExpr.size()) {
             std::string twoChar = cleanExpr.substr(i, 2);
-            if (symbolToLLIL.find(twoChar) != symbolToLLIL.end()) {
-                int llilOp = mapSymbolToLLIL(twoChar);
-                tokens.emplace_back(TokenType::OPERATOR, twoChar, llilOp);
+            if (symbolToHLIL.find(twoChar) != symbolToHLIL.end()) {
+                int hlilOp = mapSymbolToHLIL(twoChar);
+                tokens.emplace_back(TokenType::OPERATOR, twoChar, hlilOp);
                 i += 2;
                 continue;
             }
@@ -160,9 +177,9 @@ std::vector<Token> MBASimplifier::tokenize(const std::string& expr) const {
         // Handle three-character operators
         if (i + 2 < cleanExpr.size()) {
             std::string threeChar = cleanExpr.substr(i, 3);
-            if (symbolToLLIL.find(threeChar) != symbolToLLIL.end()) {
-                int llilOp = mapSymbolToLLIL(threeChar);
-                tokens.emplace_back(TokenType::OPERATOR, threeChar, llilOp);
+            if (symbolToHLIL.find(threeChar) != symbolToHLIL.end()) {
+                int hlilOp = mapSymbolToHLIL(threeChar);
+                tokens.emplace_back(TokenType::OPERATOR, threeChar, hlilOp);
                 i += 3;
                 continue;
             }
@@ -170,9 +187,9 @@ std::vector<Token> MBASimplifier::tokenize(const std::string& expr) const {
 
         // Handle single character operators
         std::string singleChar(1, cleanExpr[i]);
-        if (symbolToLLIL.find(singleChar) != symbolToLLIL.end()) {
-            int llilOp = mapSymbolToLLIL(singleChar);
-            tokens.emplace_back(TokenType::OPERATOR, singleChar, llilOp);
+        if (symbolToHLIL.find(singleChar) != symbolToHLIL.end()) {
+            int hlilOp = mapSymbolToHLIL(singleChar);
+            tokens.emplace_back(TokenType::OPERATOR, singleChar, hlilOp);
             i++;
             continue;
         }
@@ -187,8 +204,8 @@ std::vector<Token> MBASimplifier::tokenize(const std::string& expr) const {
             
             std::string operand = cleanExpr.substr(start, i - start);
             TokenType type = classifyToken(operand);
-            int llilOp = mapSymbolToLLIL(operand);
-            tokens.emplace_back(type, operand, llilOp);
+            int hlilOp = mapSymbolToHLIL(operand);
+            tokens.emplace_back(type, operand, hlilOp);
             continue;
         }
 
@@ -303,21 +320,21 @@ std::unique_ptr<ExprNode> MBASimplifier::parsePrimary(
 }
 
 
-std::vector<std::tuple<std::string, size_t, LowLevelILInstruction>>
+std::vector<std::tuple<std::string, size_t, HighLevelILInstruction>>
 MBASimplifier::findMatches(const Ref<Function>& func) {
-    std::vector<std::tuple<std::string, size_t, LowLevelILInstruction>> matches;
-    auto llil = func->GetLowLevelIL();
+    std::vector<std::tuple<std::string, size_t, HighLevelILInstruction>> matches;
+    auto hlil = func->GetHighLevelIL();
 
-    if (!llil) {
+    if (!hlil) {
         return matches;
     }
 
-    for (Ref<BasicBlock>& block : llil->GetBasicBlocks()) {
+    for (Ref<BasicBlock>& block : hlil->GetBasicBlocks()) {
         for (size_t instrIndex = block->GetStart(); instrIndex < block->GetEnd(); instrIndex++) {
-            LowLevelILInstruction instr = (*llil)[instrIndex];
+            HighLevelILInstruction instr = (*hlil)[instrIndex];
 
-            if (instr.operation == LLIL_SET_REG) {
-                LowLevelILInstruction srcExpr = instr.GetSourceExpr<LLIL_SET_REG>();
+            if (instr.operation == HLIL_VAR_INIT) {
+                HighLevelILInstruction srcExpr = instr.GetSourceExpr<HLIL_VAR_INIT>();
 
                 for (const auto& pattern : patterns) {
                     auto tokens = tokenize(pattern.original);
@@ -335,22 +352,23 @@ MBASimplifier::findMatches(const Ref<Function>& func) {
 }
 
 size_t MBASimplifier::replaceObfuscatedWithSimple(
-    const Ref<LowLevelILFunction>& llil,
-    const LowLevelILInstruction& srcExpr,
-    const LowLevelILInstruction& leftExpr,
-    const LowLevelILInstruction& rightExpr)
+    const Ref<HighLevelILFunction>& hlil,
+    const HighLevelILInstruction& srcExpr,
+    const HighLevelILInstruction& leftExpr,
+    const HighLevelILInstruction& rightExpr)
 {
-    ExprId left = llil->Register(leftExpr.size, leftExpr.GetSourceRegister());
-    ExprId right = llil->Register(rightExpr.size, rightExpr.GetSourceRegister());
-    ExprId simplified = llil->AddExpr(LLIL_MUL, srcExpr.size, left, right);
-    llil->ReplaceExpr(srcExpr.exprIndex, simplified);
-    llil->GenerateSSAForm();
+    ExprId left = hlil->Var(leftExpr.size, leftExpr.GetVariable());
+    ExprId right = hlil->Var(rightExpr.size, rightExpr.GetVariable());
+    ExprId simplified = hlil->AddExpr(HLIL_MUL, srcExpr.size, left, right);
+    hlil->ReplaceExpr(srcExpr.exprIndex, simplified);
+    hlil->GenerateSSAForm();
 
     return 1;
 }
+
 void MBASimplifier::execute(const Ref<AnalysisContext>& analysisContext) {
     const Ref<Function> func = analysisContext->GetFunction();
-    const Ref<LowLevelILFunction> llil = func->GetLowLevelIL();
+    const Ref<HighLevelILFunction> hlil = func->GetHighLevelIL();
 
     auto matches = findMatches(func);
     std::cout << "[MBASimplifier] Found " << matches.size() << " matches:\n";
@@ -359,17 +377,17 @@ void MBASimplifier::execute(const Ref<AnalysisContext>& analysisContext) {
     for (const auto& match : matches) {
         const std::string& pattern = std::get<0>(match);
         size_t index = std::get<1>(match);
-        const LowLevelILInstruction& srcExpr = std::get<2>(match); 
+        const HighLevelILInstruction& srcExpr = std::get<2>(match); 
 
         std::cout << "  [Debug] At index " << index << ", matched pattern: \"" << pattern << "\"\n";
         std::cout << "  [Debug] Matched expression (" << std::showbase << std::hex << srcExpr.address << std::dec << "):\n";
         Utils::PrintILExpr(srcExpr, 1);
 
-        if (srcExpr.operation == LLIL_MUL || srcExpr.operation == LLIL_ADD || srcExpr.operation == LLIL_XOR) {
-            const LowLevelILInstruction leftExpr = srcExpr.GetLeftExpr();
-            const LowLevelILInstruction rightExpr = srcExpr.GetRightExpr();
+        if (srcExpr.operation == HLIL_MUL || srcExpr.operation == HLIL_ADD || srcExpr.operation == HLIL_XOR) {
+            const HighLevelILInstruction leftExpr = srcExpr.GetLeftExpr();
+            const HighLevelILInstruction rightExpr = srcExpr.GetRightExpr();
 
-            replacedCount += replaceObfuscatedWithSimple(llil, srcExpr, leftExpr, rightExpr);
+            replacedCount += replaceObfuscatedWithSimple(hlil, srcExpr, leftExpr, rightExpr);
             std::cout << "  [Info] Replaced pattern \"" << pattern << "\" at instruction index " << index << "\n";
         } else {
             std::cout << "  [Info] Skipped non-binary operation at index " << index << "\n";
@@ -377,23 +395,6 @@ void MBASimplifier::execute(const Ref<AnalysisContext>& analysisContext) {
     }
 
     std::cout << "[MBASimplifier] Replaced " << replacedCount << " expressions\n";
-}
-
-int MBASimplifier::mapSymbolToLLIL(const std::string& symbol) const {
-    auto it = symbolToLLIL.find(symbol);
-    if (it != symbolToLLIL.end()) {
-        return it->second;
-    }
-
-    if (symbol.size() == 1 && std::isalpha(static_cast<unsigned char>(symbol[0]))) {
-        return LLIL_REG;
-    }
-    
-    if (std::all_of(symbol.begin(), symbol.end(), ::isdigit)) {
-        return LLIL_CONST;
-    }
-    
-    return -1;
 }
 
 int MBASimplifier::getOperatorPrecedence(const std::string& op) const {
@@ -404,7 +405,7 @@ int MBASimplifier::getOperatorPrecedence(const std::string& op) const {
 }
 
 bool MBASimplifier::isOperator(const std::string& token) const {
-    return symbolToLLIL.find(token) != symbolToLLIL.end() && 
+    return symbolToHLIL.find(token) != symbolToHLIL.end() && 
            token != "~"; // Special case for unary
 }
 
@@ -439,16 +440,16 @@ bool MBASimplifier::isValidCSVLine(const std::string& line) const {
            trimmed.find(',') != std::string::npos;
 }
 
-bool MBASimplifier::matchPattern(const ExprNode* patternNode, const BinaryNinja::LowLevelILInstruction& ilNode) const {
+bool MBASimplifier::matchPattern(const ExprNode* patternNode, const BinaryNinja::HighLevelILInstruction& ilNode) const {
     if (!patternNode)
         return false;
 
     if (patternNode->token.type == TokenType::OPERATOR) {
-        if (patternNode->token.llilOpcode != ilNode.operation)
+        if (patternNode->token.hlilOpcode != ilNode.operation)
             return false;
     } else if (patternNode->token.type == TokenType::OPERAND) {
         switch (ilNode.operation) {
-            case LLIL_CONST: {
+            case HLIL_CONST: {
                 int64_t ilValue = ilNode.GetConstant();
                 try {
                     int64_t patternValue = std::stoll(patternNode->token.value);
@@ -459,7 +460,7 @@ bool MBASimplifier::matchPattern(const ExprNode* patternNode, const BinaryNinja:
                 }
                 break;
             }
-            case LLIL_REG:
+            case HLIL_VAR:
                 // Accept registers and variables as wildcard matches
                 break;
             default:
@@ -469,6 +470,7 @@ bool MBASimplifier::matchPattern(const ExprNode* patternNode, const BinaryNinja:
         return false;
     }
 
+    // Debrouille toi a comprendre la recursivité courage Lionel je suis pas avec toi 
     // Recursively match children nodes
     size_t patternChildCount = patternNode->children.size();
     const auto& operands = ilNode.GetOperands();
@@ -476,10 +478,10 @@ bool MBASimplifier::matchPattern(const ExprNode* patternNode, const BinaryNinja:
     size_t count = std::min(patternChildCount, ilOperandCount);
 
     for (size_t i = 0; i < count; i++) {
-        if (operands[i].GetType() != LowLevelILOperandType::ExprLowLevelOperand)
+        if (operands[i].GetType() != HighLevelILOperandType::ExprHighLevelOperand)
             return false;
 
-        LowLevelILInstruction childInstr = operands[i].GetExpr();
+        HighLevelILInstruction childInstr = operands[i].GetExpr();
         if (!matchPattern(patternNode->children[i].get(), childInstr)) {
             return false;
         }
@@ -488,7 +490,7 @@ bool MBASimplifier::matchPattern(const ExprNode* patternNode, const BinaryNinja:
     return true;
 }
 
-std::unique_ptr<ExprNode> MBASimplifier::extractLLILSubtree(const LowLevelILInstruction& instr) const {
+std::unique_ptr<ExprNode> MBASimplifier::extractHLILSubtree(const HighLevelILInstruction& instr) const {
     Token token(TokenType::OPERATOR, OperationToString(instr.operation), instr.operation);
     auto node = std::make_unique<ExprNode>(token);
 
@@ -497,42 +499,11 @@ std::unique_ptr<ExprNode> MBASimplifier::extractLLILSubtree(const LowLevelILInst
 
     for (size_t i = 0; i < operandCount; ++i) {
         auto operand = instr.GetRawOperandAsExpr(i);
-        if (operand.operation == LLIL_NOP)
+        if (operand.operation == HLIL_NOP)
             continue;
 
-        node->children.push_back(extractLLILSubtree(operand));
+        node->children.push_back(extractHLILSubtree(operand));
     }
 
     return node;
-}
-
-void MBASimplifier::printExpressionTree(const ExprNode* node, int depth) const {
-    if (!node) return;
-    
-    std::string indent(depth * 2, ' ');
-    std::cout << indent << node->token.value << " (LLIL: " << node->token.llilOpcode << ")" << std::endl;
-    
-    for (const auto& child : node->children) {
-        printExpressionTree(child.get(), depth + 1);
-    }
-}
-
-std::string MBASimplifier::expressionTreeToString(const ExprNode* node) const {
-    if (!node) return "";
-    
-    if (node->children.empty()) {
-        return node->token.value;
-    }
-    
-    if (node->children.size() == 1) {
-        return node->token.value + expressionTreeToString(node->children[0].get());
-    }
-    
-    if (node->children.size() == 2) {
-        return "(" + expressionTreeToString(node->children[0].get()) + 
-               node->token.value + 
-               expressionTreeToString(node->children[1].get()) + ")";
-    }
-    
-    return node->token.value;
 }

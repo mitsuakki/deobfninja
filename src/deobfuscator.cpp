@@ -1,3 +1,5 @@
+#include <cxxabi.h>
+
 #include "../include/deobfuscator.hpp"
 #include "../include/methods/instructions/mbasimplifier.hpp"
 #include "../include/methods/flows/cffdetection.hpp"
@@ -17,7 +19,13 @@ bool Deobfuscator::registerMethod(IDeobfuscationMethod* method) {
         return false;
     }
 
-    BinaryNinja::LogInfo("Registered method: %s", typeid(*method).name());
+    int status;
+    const char* mangled = typeid(*deobMethod).name();
+    char* demangled = abi::__cxa_demangle(mangled, nullptr, nullptr, &status);
+    std::string className = (status == 0 && demangled) ? demangled : mangled;
+    free(demangled);  // Prevent memory leak
+
+    BinaryNinja::LogInfo("Registering method: %s", className.c_str());
 
     methods.push_back(deobMethod);
     return true;

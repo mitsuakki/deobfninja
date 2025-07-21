@@ -1,3 +1,28 @@
+"""
+MBA Linear Expression Generator
+
+This script generates equal linear Boolean expressions using
+basic expressions (such as `x&y`, `x|~y`, etc.). These expressions are
+useful in reverse engineering, code obfuscation,
+and symbolic analysis.
+
+The core of the algorithm is based on solving linear equations 
+in ℤ using Boolean algebra. The expressions generated are
+obfuscations of real simple expressions, preserving their behaviour
+for any possible input.
+
+Dependencies:
+    - SymPy (symbolic computation, nullspace)
+    - Z3 (not actively used here, but intended for SMT verification)
+    - pandas, tqdm, argparse
+
+Usage:
+    python script.py --numOfVars 2 --numOfTerms 5
+
+Output:
+    CSV file with two columns: [Obfuscated, Original]
+"""
+
 import os
 import argparse
 import pandas as pd
@@ -12,15 +37,22 @@ from datetime import datetime
 
 class ExpressionGenerator:
     """
-    Generate linear MBA expressions.
-    Each term in the expression is a simple form of two Boolean variable expressions.
+    ExpressionGenerator generates valid linear MBA (Mixed Boolean-Arithmetic) expressions.
 
-    Attributes:
-        nVars: The number of boolean variables (e.g, 1 for x and y, 3 for x, y and z).
-        nTerms: The number of terms in the expression.
-        exprs: Basic expressions and their truth tables. '-1' represents a constant.
-        indexes: All possible combinations of expressions from exprs.
-        result: A list to store the generated expressions.
+    An MBA expression is an equality of the form:
+        Σ ci * Ei(x, y, ...) = Σ cj * Ej(x, y, ...)
+    where Ei and Ej are Boolean expressions over n variables, and ci, cj are integers.
+
+    This class takes a set of reduced Boolean expressions, selects combinations of them
+    of fixed size (nTerms), and uses linear algebra to find a combination of coefficients
+    such that the weighted sum of the expressions is identical on both sides (equality of truth vectors).
+
+    Attributes :
+        - nVars (int): Number of Boolean variables (e.g., 2 for x and y).
+        - nTerms (int): Number of terms to combine in each MBA.
+        - exprs (dict): Dictionary of Boolean expressions (in string form) and their truth table.
+        - indexes (list): List of expression index combinations to be tested.
+        - result (list): List of pairs (obfuscated_expr, original_expr) generated.
     """
 
     def __init__(self, nVars: int, nTerms: int):
@@ -39,6 +71,7 @@ class ExpressionGenerator:
         }
         # self.exprs = self.generate_all_exprs()
 
+    # CA MARCHE PAS
     def generate_all_exprs(self):
         """
         Automatically generate all simplified boolean expressions with their truth tables
@@ -79,9 +112,18 @@ class ExpressionGenerator:
 
     def index_combine(self, start: int, tmp: list):
         """
-        Generate all combinations of non-repeating nTerms expressions from exprs.
-        Store all combinations in self.indexes.
+        Recursively generate all non-repeating combinations of `nTerms` expression indexes.
+
+        Args:
+            start (int): Current starting index.
+            tmp (list): Temporary list of indexes being built.
+
+        Implementation detail:
+            - To reduce search space, we step by 10^(nVars - 2).
+            This skips similar patterns to avoid redundant MBA generation,
+            acting as a crude form of pruning.
         """
+       
         if len(tmp) == self.nTerms:
             self.indexes.append(list(tmp))
             return
@@ -95,7 +137,14 @@ class ExpressionGenerator:
 
     def expression_generate(self, indexOfExprs: list, v: list):
         """
-        Generate an MBA expression using a combination of expression indexes and corresponding coefficients.
+        Converts a set of expression indexes (in exprs) and their associated coefficients
+        into a character string representing a valid arithmetic equality between two MBA expressions.
+
+        The distribution of terms between the left and right sides depends on their order to simulate an asymmetric form
+        while retaining the mathematical truth: same result on both sides.
+
+        This function also ensures that the variables `x`, `y`, and `z` appear in the expression
+        to avoid constant, trivial or non-variable equalities.
         """
 
         def construct_expression(coeff, sign, left, right):
@@ -148,7 +197,6 @@ class ExpressionGenerator:
         """
         Find the index of the first zero in a vector
         """
-
         for i in range(len(v)):
             if v[i] == 0:
                 return i
@@ -156,8 +204,21 @@ class ExpressionGenerator:
 
     def compute_nullspace_vector(self, F: Matrix):
         """
-        Compute the nullspace vector v with F * v = 0.
+        Computes a vector v ≠ 0 such that F * v = 0, i.e. a vector in the kernel of F.
+        
+        This vector v is used to combine the columns (i.e., truth vectors of expressions) 
+        linearly to obtain a zero sum - meaning that the left 
+        and right sides of a future equality will give the same result for all combinations 
+        of Boolean inputs.
+
+        The aim is to generate non-trivial integer coefficients to construct an MBA.
+
+        Algorithmically:
+            - Get the basis of the kernel of F via `nullspace()`.
+            - Attempt to construct a combination of these vectors that contains no zeros (avoids null terms).
+            - If this is impossible, we return a null vector, which means "no usable solution".
         """
+        
         solutions = F.nullspace()
         v = zeros(self.nTerms, 1)
 
@@ -191,8 +252,13 @@ class ExpressionGenerator:
 
     def generate_expressions(self):
         """
-        Generate MBA expressions for all possible combinations of terms in exprs.
+        Generates all valid MBA expressions by :
+        - Iterating over combinations of Boolean expressions (`nTerms` among `exprs`)
+        - Constructing a matrix F of their truth vectors
+        - Solving F * v = 0 to find a valid linear combination
+        - Generating symbolic expressions via `expression_generate`
         """
+
         self.index_combine(0, [])
 
         for index in tqdm(self.indexes, desc="Generating expressions"):
@@ -236,6 +302,7 @@ if __name__ == "__main__":
             df = pd.DataFrame(generator.result, columns=["Obfuscated", "Original"])
             df.to_csv(datasetPath, mode="a+", header=True, index=False)
 
+            # This part is for SMT validation
             # x = BitVec('x', 32)
             # y = BitVec('y', 32)
             # z = BitVec('z', 32)

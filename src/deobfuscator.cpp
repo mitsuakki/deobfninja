@@ -3,6 +3,7 @@
 #include "../include/deobfuscator.hpp"
 #include "../include/methods/instructions/mbasimplifier.hpp"
 #include "../include/methods/flows/cffdetection.hpp"
+#include "../include/methods/flows/nativepredicatesolver.hpp"
 
 bool Deobfuscator::registerMethod(IDeobfuscationMethod* method) {
     if (!method)
@@ -34,4 +35,5 @@ bool Deobfuscator::registerMethod(IDeobfuscationMethod* method) {
 void Deobfuscator::init() {
     registerMethod(new Instructions::MBASimplifier());
     registerMethod(new Flows::CFFDetection());
+    registerMethod(new Flows::NativePredicateSolver());
 }

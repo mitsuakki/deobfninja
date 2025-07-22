@@ -26,4 +26,8 @@
 #include "deobfuscator.hpp"
 #include "../binaryninjaapi/binaryninjaapi.h"
 
+
+// For this file, the docstring is located in plugin.cpp
+// Since we have no methods here i found it interesting :)
+
 #endif //PLUGIN_H

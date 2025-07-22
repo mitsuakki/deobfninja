@@ -14,8 +14,8 @@
 // Forward declarations
 namespace BinaryNinja {
     class Function;
-    class HighLevelILFunction;
-    class HighLevelILInstruction;
+    class LowLevelILFunction;
+    class LowLevelILInstruction;
     class AnalysisContext;
     template<typename T> class Ref;
 }
@@ -34,10 +34,10 @@ namespace Instructions {
     struct Token {
         TokenType type;
         std::string value;
-        int hlilOpcode;
+        int llilOpcode;
         
         Token(TokenType t, std::string v, int op = -1) 
-            : type(t), value(std::move(v)), hlilOpcode(op) {}
+            : type(t), value(std::move(v)), llilOpcode(op) {}
     };
 
     // Expression tree node
@@ -50,11 +50,11 @@ namespace Instructions {
 
     // Pattern matching structure
     struct MBAPattern {
-        std::string obfuscated;
         std::string original;
+        std::string obfuscated;
         
-        MBAPattern(std::string obf, std::string orig) 
-            : obfuscated(std::move(obf)), original(std::move(orig)) {}
+        MBAPattern(std::string orig, std::string obf) 
+            : original(std::move(orig)), obfuscated(std::move(obf)) {}
     };
 
     class MBASimplifier : public IDeobfuscationMethod
@@ -70,7 +70,7 @@ namespace Instructions {
         std::vector<MBAPattern>& getPatterns() { return patterns; }
 
         size_t getMatchesCount() const { return matches.size(); }
-        std::vector<std::tuple<std::string, size_t, const BinaryNinja::HighLevelILInstruction*>>& getMatches() { return matches; }
+        std::vector<std::tuple<std::string, size_t, const BinaryNinja::LowLevelILInstruction*>>& getMatches() { return matches; }
 
         // Tokenization and parsing
         std::vector<Token> tokenize(const std::string& expr) const;
@@ -80,31 +80,31 @@ namespace Instructions {
         // Pattern matching and simplification
         std::vector<std::tuple<
             std::string, size_t,
-            BinaryNinja::HighLevelILInstruction
+            BinaryNinja::LowLevelILInstruction
         >> findMatches(const BinaryNinja::Ref<BinaryNinja::Function>& func);
 
         size_t replaceObfuscatedWithSimple(
-            const BinaryNinja::Ref<BinaryNinja::HighLevelILFunction>& hlil,
-            const BinaryNinja::HighLevelILInstruction& srcExpr,
-            const BinaryNinja::HighLevelILInstruction& leftExpr,
-            const BinaryNinja::HighLevelILInstruction& rightExpr);
+            const BinaryNinja::Ref<BinaryNinja::LowLevelILFunction>& llil,
+            const BinaryNinja::LowLevelILInstruction& srcExpr,
+            const BinaryNinja::LowLevelILInstruction& leftExpr,
+            const BinaryNinja::LowLevelILInstruction& rightExpr);
 
         // Main execution
         void execute(const BinaryNinja::Ref<BinaryNinja::AnalysisContext>& analysisContext) override;
 
     private:
         std::vector<MBAPattern> patterns;
-        std::vector<std::tuple<std::string, size_t, const BinaryNinja::HighLevelILInstruction*>> matches;
+        std::vector<std::tuple<std::string, size_t, const BinaryNinja::LowLevelILInstruction*>> matches;
         
         // Symbol mapping
-        static const std::unordered_map<std::string, int> symbolToHLIL;
-        static const std::unordered_map<int, std::string> hlilToSymbol;
+        static const std::unordered_map<std::string, int> symbolToLLIL;
+        static const std::unordered_map<int, std::string> llilToSymbol;
 
-        std::string OperationToString(BNHighLevelILOperation op) const;
+        std::string OperationToString(BNLowLevelILOperation op) const;
         static const std::unordered_map<char, int> operatorPrecedence;
         
         // Helper methods
-        int mapSymbolToHLIL(const std::string& symbol) const;
+        int mapSymbolToLLIL(const std::string& symbol) const;
         int getOperatorPrecedence(const std::string& op) const;
         bool isOperator(const std::string& token) const;
         bool isOperand(const std::string& token) const;
@@ -121,13 +121,17 @@ namespace Instructions {
             size_t& pos) const;
         
         // Pattern matching
-        bool matchPattern(const Instructions::ExprNode* patternNode, const BinaryNinja::HighLevelILInstruction& ilNode) const;
-        std::unique_ptr<Instructions::ExprNode> extractHLILSubtree(const BinaryNinja::HighLevelILInstruction& instr) const;
+        bool matchPattern(const Instructions::ExprNode* patternNode, const BinaryNinja::LowLevelILInstruction& ilNode) const;
+        std::unique_ptr<Instructions::ExprNode> extractLLILSubtree(const BinaryNinja::LowLevelILInstruction& instr) const;
         
         // Utility methods
         std::string trim(const std::string& str) const;
         std::vector<std::string> split(const std::string& str, char delimiter) const;
         bool isValidCSVLine(const std::string& line) const;
+        
+        // Debug helpers
+        void printExpressionTree(const ExprNode* node, int depth = 0) const;
+        void logPatternMatch(const std::string& pattern, size_t instrIndex) const;
     };
 }
 

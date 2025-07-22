@@ -37,7 +37,7 @@ extern "C"
             executeEnabledMethods(deobfuscator, DeobfuscationCategory::Workflow, context);
         }));
 
-        customWorkflow->Insert("core.function.analyzeHLILTypeReferences", activityName);
+        customWorkflow->Insert("core.function.generateHighLevelIL", activityName);
         Workflow::RegisterWorkflow(customWorkflow,
             R"#({
                 "title" : "Deobfuscation",

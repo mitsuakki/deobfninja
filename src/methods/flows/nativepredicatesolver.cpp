@@ -31,13 +31,6 @@ void NativePredicateSolver::execute(const Ref<AnalysisContext>& analysisContext)
 
     PluginCommand::RegisterForFunction(prefix, "Recursively patch opaque predicates in all functions until none remain",
         [](BinaryView* view, Function* func) {
-            uint64_t addr = view->GetCurrentOffset();
-            auto functions = view->GetAnalysisFunctionsContainingAddress(addr);
-            if (functions.empty()) {
-                LogWarn("No function at current address 0x%lx", addr);
-                return;
-            }
-
             auto mlil = func->GetMediumLevelIL();
             if (!mlil) {
                 LogWarn("No MLIL available for function at 0x%lx", func->GetStart());
@@ -62,8 +55,7 @@ void NativePredicateSolver::execute(const Ref<AnalysisContext>& analysisContext)
                 
                 auto startTime = std::chrono::high_resolution_clock::now();
 
-                int totalPatches = 0;
-                int pass = 1;
+                int totalPatches = 0; int pass = 1;
                 const int maxPasses = 20;
 
                 while (pass <= maxPasses) {
@@ -80,7 +72,6 @@ void NativePredicateSolver::execute(const Ref<AnalysisContext>& analysisContext)
 
                     int patchCount = 0;
                     size_t instructionCount = mlil->GetInstructionCount();
-
                     for (size_t i = 0; i < instructionCount; ++i) {
                         if (i % 100 == 0 && task->IsCancelled()) {
                             break;
@@ -112,7 +103,6 @@ void NativePredicateSolver::execute(const Ref<AnalysisContext>& analysisContext)
                         break;
 
                     viewRef->UpdateAnalysis();
-                    
                     auto updatedFunctions = viewRef->GetAnalysisFunctionsContainingAddress(funcRef->GetStart());
                     if (!updatedFunctions.empty()) {
                         funcRef = updatedFunctions[0];

@@ -57,6 +57,8 @@ TEST(DeobfuscatorTest, InitRegistersMBASimplifier) {
 TEST(DeobfuscatorTest, GetMethods) {
     Deobfuscator deob;
     DummyMethod* dummy = new DummyMethod();
+
+    deob.registerMethod(dummy);
     std::vector<IDeobfuscationMethod*> methods = deob.getMethods();
 
     EXPECT_GE(methods.size(), 1);
@@ -69,6 +71,9 @@ TEST(DeobfuscatorTest, GetMethodsByCategory) {
     Deobfuscator deob;
     DummyMethod* dummy = new DummyMethod();
     Instructions::MBASimplifier* mba = new Instructions::MBASimplifier();
+
+    deob.registerMethod(dummy);
+    deob.registerMethod(mba);
     std::vector<IDeobfuscationMethod*> methods = 
         deob.getMethodsByCategory(DeobfuscationCategory::Workflow);
 

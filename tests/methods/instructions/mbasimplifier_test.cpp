@@ -15,7 +15,7 @@ protected:
         // Create test CSV file
         std::filesystem::create_directories("test_resources");
         std::ofstream file("test_resources/mba-dataset-test.csv");
-        file << "Original,Obfuscated\n";
+        file << "Obfuscated,Original\n";
         file << "a+b,a*b\n";
         file << "x^y,x&y\n";
         file << "(a+b)*c,(a^b)+c\n";

@@ -43,7 +43,7 @@ void NativePredicateSolver::execute(const Ref<AnalysisContext>& analysisContext)
                 return;
             }
 
-            std::string funcName = func->GetSymbol() ? func->GetSymbol()->GetShortName() : "sub_" + std::to_string(func->GetStart());
+            std::string funcName = func->GetSymbol()->GetFullName();
 
             Ref<BinaryView> viewRef = view;
             Ref<Function> funcRef = func;

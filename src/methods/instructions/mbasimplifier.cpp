@@ -338,7 +338,16 @@ MBASimplifier::findMatches(const Ref<Function>& func) {
 
                 for (const auto& pattern : patterns) {
                     auto tokens = tokenize(pattern.obfuscated);
+                    if (tokens.empty()) {
+                        std::cerr << "Failed to tokenize pattern: " << pattern.obfuscated << std::endl;
+                        continue;
+                    }
+                    
                     auto tree = parseExpression(tokens);
+                    if (!tree) {
+                        std::cerr << "Failed to parse pattern: " << pattern.obfuscated << std::endl;
+                        continue;
+                    }
 
                     if (matchPattern(tree.get(), srcExpr)) {
                         matches.emplace_back(pattern.obfuscated, instrIndex, srcExpr);
@@ -373,6 +382,16 @@ void MBASimplifier::execute(const Ref<AnalysisContext>& analysisContext) {
     // auto matches = findMatches(func);
     // std::cout << "[MBASimplifier] Found " << matches.size() << " matches:\n";
 
+    // size_t replacedCount = 0;
+    // for (const auto& match : matches) {
+    //     const std::string& pattern = std::get<0>(match);
+    //     size_t index = std::get<1>(match);
+    //     const HighLevelILInstruction& srcExpr = std::get<2>(match);
+
+    //     std::cout << "  [Debug] At index " << index << ", matched pattern: \"" << pattern << "\"\n";
+    //     std::cout << "  [Debug] Matched expression (" << std::showbase << std::hex << srcExpr.address << std::dec << "):\n";
+    //     Utils::PrintILExpr(srcExpr, 1);
+
     //     if (srcExpr.operation == HLIL_MUL || srcExpr.operation == HLIL_ADD || srcExpr.operation == HLIL_XOR) {
     //         const HighLevelILInstruction leftExpr = srcExpr.GetLeftExpr();
     //         const HighLevelILInstruction rightExpr = srcExpr.GetRightExpr();
@@ -385,11 +404,19 @@ void MBASimplifier::execute(const Ref<AnalysisContext>& analysisContext) {
     // }
 
     // std::cout << "[MBASimplifier] Replaced " << replacedCount << " expressions\n";
-    
+
     if (!hlil) {
-        LogAlert("HLIL pas dispo à cette couche");
+        Ref<Symbol> symbol = func->GetSymbol();
+
+        std::cerr << "[MBASimplifier] No High-Level IL found for function: " 
+                  << symbol->GetFullName().c_str() << std::endl;
         return;
     }
+
+    for (Ref<BasicBlock>& block : hlil->GetBasicBlocks()) {
+        
+    }
+        
 }
 
 int MBASimplifier::getOperatorPrecedence(const std::string& op) const {
@@ -464,8 +491,7 @@ bool MBASimplifier::matchPattern(const ExprNode* patternNode, const BinaryNinja:
     } else {
         return false;
     }
-
-    // Debrouille toi a comprendre la recursivité courage Lionel je suis pas avec toi 
+ 
     // Recursively match children nodes
     size_t patternChildCount = patternNode->children.size();
     const auto& operands = ilNode.GetOperands();

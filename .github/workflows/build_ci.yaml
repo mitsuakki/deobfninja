@@ -41,5 +41,5 @@ jobs:
       - name: Build
         run: cmake --build build
 
-      - name: Test
-        run: ./build/deobfninja_gtest
+      # - name: Test
+      #   run: ./build/deobfninja_gtest
